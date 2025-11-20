@@ -3,15 +3,6 @@
 ## 项目简介
 基于 Spring Boot 3.2 开发的竞赛管理系统后端，实现用户管理、竞赛管理、报名管理、作品提交、评审管理、成绩奖项和消息通知七大核心功能模块。
 
-## 技术栈
-- Spring Boot 3.2.0
-- Spring Data JPA
-- Spring Security 6.x
-- MySQL 8.0+
-- JWT Authentication
-- Lombok
-- MapStruct
-
 ## 功能模块
 1. 用户管理：注册、认证、密码找回、管理员审核、权限分配
 2. 竞赛管理：竞赛发布、规则设置、状态管理、信息查询
