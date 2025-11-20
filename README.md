@@ -21,40 +21,6 @@
 6. 成绩奖项：生成获奖名单、公示结果、成绩查询、证书生成
 7. 消息通知：报名审核、作品提醒、获奖通知
 
-## 快速开始
+### 已有数据库格式
+1. 创建数据库的代码：CollegeStudentCompetitionManagementSystem_mysql.sql（已经在服务器创建完成，仅供参考表之间的联系）
 
-### 前置要求
-- JDK 17+
-- Maven 3.6+
-- MySQL 8.0+
-
-### 数据库初始化
-1. 创建数据库：`CREATE DATABASE competition_db;`
-2. 执行数据库脚本（参考 sql 目录）
-
-### 配置
-修改 `src/main/resources/application.yml` 中的数据库连接信息
-
-### 运行
-```bash
-mvn spring-boot:run
-```
-
-访问: http://localhost:8080
-
-## API 文档
-启动后访问: http://localhost:8080/swagger-ui.html
-
-## 项目结构
-```
-src/main/java/com/competition/
-├── entity/          # 实体类
-├── repository/      # 数据访问层
-├── service/         # 业务逻辑层
-├── controller/      # REST API
-├── dto/             # 数据传输对象
-├── security/        # 安全配置
-├── exception/       # 异常处理
-├── enums/           # 枚举类
-└── util/            # 工具类
-```
