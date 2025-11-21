@@ -29,7 +29,7 @@
             <el-tag v-else-if="row.userStatus === 'suspended'" type="danger">暂停</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
             <el-button 
               v-if="row.userStatus === 'inactive'" 
@@ -47,7 +47,15 @@
             >
               暂停
             </el-button>
+            <el-button 
+              type="primary" 
+              size="small" 
+              @click="showRoleDialog(row)"
+            >
+              分配权限
+            </el-button>
             <el-popconfirm
+              v-if="row.userId !== authStore.user?.userId"
               title="确定删除该用户吗？"
               @confirm="deleteUser(row.userId)"
             >
@@ -59,17 +67,49 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- Role Assignment Dialog -->
+    <el-dialog v-model="roleDialogVisible" title="分配权限" width="500px">
+      <div v-if="selectedUser">
+        <p><strong>用户：</strong>{{ selectedUser.username }} ({{ selectedUser.realName }})</p>
+        <el-form>
+          <el-form-item label="选择角色">
+            <el-checkbox-group v-model="selectedRoles">
+              <el-checkbox 
+                v-for="role in availableRoles" 
+                :key="role.roleId" 
+                :label="role.roleId"
+              >
+                {{ role.roleName }} ({{ role.roleCode }})
+              </el-checkbox>
+            </el-checkbox-group>
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="roleDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="assignRoles">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { userAPI } from '../../api'
+import { useAuthStore } from '../../stores/auth'
 import { ElMessage } from 'element-plus'
 
+const authStore = useAuthStore()
 const users = ref([])
 const loading = ref(false)
 const inactiveCount = ref(0)
+const roleDialogVisible = ref(false)
+const selectedUser = ref(null)
+const selectedRoles = ref([])
+const availableRoles = ref([])
 
 const loadAllUsers = async () => {
   loading.value = true
@@ -97,6 +137,45 @@ const loadInactiveUsers = async () => {
     ElMessage.error('加载待审核用户失败')
   } finally {
     loading.value = false
+  }
+}
+
+const loadRoles = async () => {
+  try {
+    const response = await userAPI.getAllRoles()
+    if (response.success) {
+      availableRoles.value = response.data
+    }
+  } catch (error) {
+    ElMessage.error('加载角色列表失败')
+  }
+}
+
+const showRoleDialog = async (user) => {
+  selectedUser.value = user
+  roleDialogVisible.value = true
+  
+  // Load user's current roles
+  try {
+    const response = await userAPI.getUserRoles(user.userId)
+    if (response.success) {
+      selectedRoles.value = response.data.map(role => role.roleId)
+    }
+  } catch (error) {
+    ElMessage.error('加载用户角色失败')
+  }
+}
+
+const assignRoles = async () => {
+  try {
+    const response = await userAPI.assignRoles(selectedUser.value.userId, selectedRoles.value)
+    if (response.success) {
+      ElMessage.success('权限分配成功')
+      roleDialogVisible.value = false
+      loadAllUsers()
+    }
+  } catch (error) {
+    ElMessage.error('权限分配失败')
   }
 }
 
@@ -138,6 +217,7 @@ const deleteUser = async (userId) => {
 
 onMounted(() => {
   loadAllUsers()
+  loadRoles()
 })
 </script>
 

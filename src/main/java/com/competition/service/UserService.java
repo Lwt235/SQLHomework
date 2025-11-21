@@ -1,9 +1,14 @@
 package com.competition.service;
 
 import com.competition.entity.User;
+import com.competition.entity.UserRole;
+import com.competition.entity.Role;
 import com.competition.repository.UserRepository;
+import com.competition.repository.UserRoleRepository;
+import com.competition.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,6 +18,12 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     public List<User> getAllUsers() {
         return userRepository.findAll().stream()
@@ -49,5 +60,54 @@ public class UserService {
         User user = getUserById(userId);
         user.setIsDeleted(true);
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void assignRoles(Integer userId, List<Integer> roleIds) {
+        User user = getUserById(userId);
+        
+        // Remove existing roles
+        List<UserRole> existingRoles = userRoleRepository.findByUserId(userId);
+        if (!existingRoles.isEmpty()) {
+            userRoleRepository.deleteAll(existingRoles);
+        }
+        
+        // Add new roles
+        if (roleIds != null && !roleIds.isEmpty()) {
+            List<Role> roles = roleRepository.findAllById(roleIds);
+            if (roles.size() != roleIds.size()) {
+                throw new RuntimeException("Some role IDs are invalid");
+            }
+            
+            List<UserRole> newUserRoles = new java.util.ArrayList<>();
+            for (Integer roleId : roleIds) {
+                UserRole userRole = new UserRole();
+                userRole.setUserId(userId);
+                userRole.setRoleId(roleId);
+                newUserRoles.add(userRole);
+            }
+            userRoleRepository.saveAll(newUserRoles);
+        }
+    }
+
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll().stream()
+                .filter(role -> !role.getIsDeleted())
+                .collect(Collectors.toList());
+    }
+
+    public List<Role> getUserRoles(Integer userId) {
+        List<UserRole> userRoles = userRoleRepository.findByUserId(userId);
+        List<Integer> roleIds = userRoles.stream()
+                .map(UserRole::getRoleId)
+                .collect(Collectors.toList());
+        
+        if (roleIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        
+        return roleRepository.findAllById(roleIds).stream()
+                .filter(role -> !role.getIsDeleted())
+                .collect(Collectors.toList());
     }
 }
