@@ -126,7 +126,7 @@ server {
     
     # API 代理到后端
     location /api {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://localhost:8086;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -208,21 +208,21 @@ java -jar target/competition-management-1.0.0.jar --spring.profiles.active=prod
 tail -f app.log
 
 # 检查端口
-netstat -tlnp | grep 8080
+netstat -tlnp | grep 8086
 # 或
-lsof -i :8080
+lsof -i :8086
 ```
 
 ### 2. 测试API和前端
 ```bash
 # 测试后端API
-curl http://localhost:8080/api/competitions/list
+curl http://localhost:8086/api/competitions/list
 
 # 访问前端
 # 浏览器打开 http://localhost:5173
 
 # 测试注册功能
-curl -X POST http://localhost:8080/api/auth/register \
+curl -X POST http://localhost:8086/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "test001",
@@ -234,7 +234,7 @@ curl -X POST http://localhost:8080/api/auth/register \
   }'
 
 # 测试登录（需要先激活用户）
-curl -X POST http://localhost:8080/api/auth/login \
+curl -X POST http://localhost:8086/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "username": "admin",
@@ -270,7 +270,7 @@ FROM openjdk:17-jdk-slim
 VOLUME /tmp
 COPY target/competition-management-1.0.0.jar app.jar
 ENTRYPOINT ["java","-jar","/app.jar"]
-EXPOSE 8080
+EXPOSE 8086
 ```
 
 ### 构建和运行
@@ -280,7 +280,7 @@ docker build -t competition-management:1.0.0 .
 
 # 运行容器
 docker run -d \
-  -p 8080:8080 \
+  -p 8086:8086 \
   -e SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/competition_management \
   -e SPRING_DATASOURCE_USERNAME=root \
   -e SPRING_DATASOURCE_PASSWORD=yourpassword \
@@ -307,7 +307,7 @@ services:
   api:
     build: .
     ports:
-      - "8080:8080"
+      - "8086:8086"
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/competition_management
       SPRING_DATASOURCE_USERNAME: root
@@ -365,7 +365,7 @@ server {
     server_name your-domain.com;
 
     location /api {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://localhost:8086;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -385,7 +385,7 @@ server {
 ### 2. 端口冲突
 ```bash
 # 查看端口占用
-lsof -i :8080
+lsof -i :8086
 
 # 修改端口
 java -jar app.jar --server.port=9090

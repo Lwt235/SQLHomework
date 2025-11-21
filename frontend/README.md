@@ -108,7 +108,7 @@ frontend/
 server: {
   proxy: {
     '/api': {
-      target: 'http://localhost:8080',
+      target: 'http://localhost:8086',
       changeOrigin: true
     }
   }
@@ -143,7 +143,7 @@ server: {
 
 ## 开发注意事项
 
-1. **后端依赖**: 前端需要后端服务运行在 http://localhost:8080
+1. **后端依赖**: 前端需要后端服务运行在 http://localhost:8086
 2. **权限控制**: 部分路由需要登录或管理员权限
 3. **数据格式**: 所有 API 响应使用统一格式 `{ success, message, data }`
 4. **日期时间**: 使用 ISO 8601 格式
