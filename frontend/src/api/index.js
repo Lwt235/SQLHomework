@@ -22,6 +22,9 @@ export const userAPI = {
   getUserById(id) {
     return api.get(`/users/${id}`)
   },
+  updateUserProfile(id, data) {
+    return api.put(`/users/${id}/profile`, data)
+  },
   activateUser(id) {
     return api.put(`/users/${id}/activate`)
   },
@@ -170,8 +173,14 @@ export const teamAPI = {
   getTeamMembers(id) {
     return api.get(`/teams/${id}/members`)
   },
+  getTeamMembersWithDetails(id) {
+    return api.get(`/teams/${id}/members/details`)
+  },
   getTeamsByUser(userId) {
     return api.get(`/teams/user/${userId}`)
+  },
+  getMyCaptainTeams() {
+    return api.get('/teams/my-captain-teams')
   },
   createTeam(data) {
     return api.post('/teams', data)
@@ -187,5 +196,11 @@ export const teamAPI = {
   },
   removeTeamMember(teamId, userId) {
     return api.delete(`/teams/${teamId}/members/${userId}`)
+  },
+  transferCaptain(teamId, userId) {
+    return api.post(`/teams/${teamId}/transfer-captain`, { userId })
+  },
+  searchUsers(query) {
+    return api.get('/teams/search-users', { params: { query } })
   }
 }

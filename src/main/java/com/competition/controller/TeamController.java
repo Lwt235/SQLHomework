@@ -3,6 +3,7 @@ package com.competition.controller;
 import com.competition.dto.ApiResponse;
 import com.competition.entity.Team;
 import com.competition.entity.TeamMember;
+import com.competition.entity.User;
 import com.competition.service.TeamService;
 import com.competition.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,24 @@ public class TeamController {
     public ResponseEntity<ApiResponse<List<TeamMember>>> getTeamMembers(@PathVariable Integer id) {
         try {
             List<TeamMember> members = teamService.getTeamMembers(id);
+            return ResponseEntity.ok(ApiResponse.success("Team members retrieved successfully", members));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve team members: " + e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/{id}/members/details")
+    public ResponseEntity<ApiResponse<List<com.competition.dto.TeamMemberDetailDTO>>> getTeamMembersWithDetails(
+            @PathVariable Integer id,
+            HttpServletRequest request) {
+        try {
+            String token = jwtTokenProvider.resolveToken(request);
+            Integer currentUserId = null;
+            if (token != null && jwtTokenProvider.validateToken(token)) {
+                currentUserId = jwtTokenProvider.getUserIdFromToken(token);
+            }
+            
+            List<com.competition.dto.TeamMemberDetailDTO> members = teamService.getTeamMembersWithDetails(id, currentUserId);
             return ResponseEntity.ok(ApiResponse.success("Team members retrieved successfully", members));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve team members: " + e.getMessage()));
@@ -133,6 +152,55 @@ public class TeamController {
             return ResponseEntity.ok(ApiResponse.success("Member removed successfully", null));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to remove member: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/{teamId}/transfer-captain")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<Void>> transferCaptain(
+            @PathVariable Integer teamId,
+            @RequestBody Map<String, Object> payload,
+            HttpServletRequest request) {
+        try {
+            String token = jwtTokenProvider.resolveToken(request);
+            if (token == null || !jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(401).body(ApiResponse.error("未授权"));
+            }
+            
+            Integer currentUserId = jwtTokenProvider.getUserIdFromToken(token);
+            Integer newCaptainUserId = (Integer) payload.get("userId");
+            
+            teamService.transferCaptain(teamId, currentUserId, newCaptainUserId);
+            return ResponseEntity.ok(ApiResponse.success("队长移交成功", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to transfer captain: " + e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/search-users")
+    public ResponseEntity<ApiResponse<List<User>>> searchUsers(@RequestParam String query) {
+        try {
+            List<User> users = teamService.searchUsersByNicknameOrUsername(query);
+            return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully", users));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to search users: " + e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/my-captain-teams")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<List<Team>>> getMyCaptainTeams(HttpServletRequest request) {
+        try {
+            String token = jwtTokenProvider.resolveToken(request);
+            if (token == null || !jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(401).body(ApiResponse.error("未授权"));
+            }
+            
+            Integer userId = jwtTokenProvider.getUserIdFromToken(token);
+            List<Team> teams = teamService.getTeamsByUserIdAndRole(userId, "leader");
+            return ResponseEntity.ok(ApiResponse.success("Captain teams retrieved successfully", teams));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve captain teams: " + e.getMessage()));
         }
     }
 }

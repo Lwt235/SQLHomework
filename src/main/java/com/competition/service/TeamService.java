@@ -158,4 +158,95 @@ public class TeamService {
         
         teamMemberRepository.delete(member);
     }
+    
+    public List<com.competition.dto.TeamMemberDetailDTO> getTeamMembersWithDetails(Integer teamId, Integer currentUserId) {
+        List<TeamMember> members = teamMemberRepository.findByTeamId(teamId);
+        List<com.competition.dto.TeamMemberDetailDTO> result = new java.util.ArrayList<>();
+        
+        for (TeamMember member : members) {
+            com.competition.dto.TeamMemberDetailDTO dto = new com.competition.dto.TeamMemberDetailDTO();
+            dto.setUserId(member.getUserId());
+            dto.setTeamId(member.getTeamId());
+            dto.setRoleInTeam(member.getRoleInTeam());
+            
+            // Get user details
+            User user = userRepository.findById(member.getUserId()).orElse(null);
+            if (user != null) {
+                dto.setUsername(user.getUsername());
+                dto.setNickname(user.getNickname());
+                dto.setRealName(user.getRealName());
+            }
+            
+            // Mark if this is the current user
+            dto.setIsCurrentUser(currentUserId != null && currentUserId.equals(member.getUserId()));
+            
+            result.add(dto);
+        }
+        
+        return result;
+    }
+    
+    @Transactional
+    public void transferCaptain(Integer teamId, Integer currentCaptainUserId, Integer newCaptainUserId) {
+        // Validate team exists
+        Team team = getTeamById(teamId);
+        
+        // Check that current user is the captain
+        TeamMember.TeamMemberId currentCaptainId = new TeamMember.TeamMemberId();
+        currentCaptainId.setTeamId(teamId);
+        currentCaptainId.setUserId(currentCaptainUserId);
+        
+        TeamMember currentCaptain = teamMemberRepository.findById(currentCaptainId)
+                .orElseThrow(() -> new RuntimeException("当前用户不是团队成员"));
+        
+        if (!"leader".equals(currentCaptain.getRoleInTeam())) {
+            throw new RuntimeException("只有队长才能转让队长身份");
+        }
+        
+        // Check that new captain is a member of the team
+        TeamMember.TeamMemberId newCaptainId = new TeamMember.TeamMemberId();
+        newCaptainId.setTeamId(teamId);
+        newCaptainId.setUserId(newCaptainUserId);
+        
+        TeamMember newCaptain = teamMemberRepository.findById(newCaptainId)
+                .orElseThrow(() -> new RuntimeException("目标用户不是团队成员"));
+        
+        // Transfer captain role
+        currentCaptain.setRoleInTeam("member");
+        newCaptain.setRoleInTeam("leader");
+        
+        teamMemberRepository.save(currentCaptain);
+        teamMemberRepository.save(newCaptain);
+    }
+    
+    public List<User> searchUsersByNicknameOrUsername(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        
+        String lowerQuery = query.toLowerCase();
+        return userRepository.findAll().stream()
+                .filter(user -> !user.getDeleted())
+                .filter(user -> UserService.STATUS_ACTIVE.equals(user.getUserStatus()))
+                .filter(user -> {
+                    if (user.getNickname() != null && user.getNickname().toLowerCase().contains(lowerQuery)) {
+                        return true;
+                    }
+                    if (user.getUsername() != null && user.getUsername().toLowerCase().contains(lowerQuery)) {
+                        return true;
+                    }
+                    return false;
+                })
+                .collect(Collectors.toList());
+    }
+    
+    public List<Team> getTeamsByUserIdAndRole(Integer userId, String role) {
+        List<TeamMember> memberships = teamMemberRepository.findByUserId(userId);
+        return memberships.stream()
+                .filter(tm -> role.equals(tm.getRoleInTeam()))
+                .map(tm -> teamRepository.findById(tm.getTeamId()))
+                .filter(opt -> opt.isPresent() && !opt.get().getDeleted())
+                .map(opt -> opt.get())
+                .collect(Collectors.toList());
+    }
 }

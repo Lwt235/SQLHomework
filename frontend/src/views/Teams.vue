@@ -21,7 +21,9 @@
             <template #header>
               <div class="team-card-header">
                 <span class="team-name">{{ team.teamName }}</span>
-                <el-tag v-if="isTeamLeader(team)" type="warning" size="small">队长</el-tag>
+                <el-tag v-if="getMyRole(team) === 'leader'" type="warning" size="small">队长</el-tag>
+                <el-tag v-else-if="getMyRole(team) === 'vice-leader'" type="success" size="small">副队长</el-tag>
+                <el-tag v-else-if="getMyRole(team)" type="info" size="small">成员</el-tag>
               </div>
             </template>
             
@@ -123,23 +125,43 @@
 
           <el-table :data="currentTeamMembers" style="width: 100%; margin-top: 20px">
             <el-table-column label="用户ID" prop="userId" width="100" />
+            <el-table-column label="昵称" prop="nickname" width="150">
+              <template #default="{ row }">
+                <span :class="{ 'current-user': row.isCurrentUser }">
+                  {{ row.nickname || '-' }}
+                  <el-tag v-if="row.isCurrentUser" type="primary" size="small" style="margin-left: 8px">我</el-tag>
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column label="用户名" prop="username" width="150" />
             <el-table-column label="角色" prop="roleInTeam" width="120">
               <template #default="{ row }">
                 <el-tag v-if="row.roleInTeam === 'leader'" type="warning">队长</el-tag>
+                <el-tag v-else-if="row.roleInTeam === 'vice-leader'" type="success">副队长</el-tag>
                 <el-tag v-else>成员</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="120" v-if="isTeamLeader(selectedTeam)">
+            <el-table-column label="操作" v-if="isTeamLeader(selectedTeam)">
               <template #default="{ row }">
-                <el-popconfirm
-                  v-if="row.roleInTeam !== 'leader'"
-                  title="确定移除该成员吗？"
-                  @confirm="removeMember(selectedTeam.teamId, row.userId)"
-                >
-                  <template #reference>
-                    <el-button type="danger" size="small">移除</el-button>
-                  </template>
-                </el-popconfirm>
+                <el-space>
+                  <el-popconfirm
+                    v-if="row.roleInTeam !== 'leader'"
+                    title="确定移除该成员吗？"
+                    @confirm="removeMember(selectedTeam.teamId, row.userId)"
+                  >
+                    <template #reference>
+                      <el-button type="danger" size="small">移除</el-button>
+                    </template>
+                  </el-popconfirm>
+                  <el-button 
+                    v-if="row.roleInTeam !== 'leader' && !row.isCurrentUser"
+                    type="primary" 
+                    size="small" 
+                    @click="showTransferDialog(row)"
+                  >
+                    转让队长
+                  </el-button>
+                </el-space>
               </template>
             </el-table-column>
           </el-table>
@@ -150,12 +172,34 @@
     <!-- Add Member Dialog -->
     <el-dialog v-model="addMemberDialogVisible" title="添加成员" width="500px">
       <el-form :model="memberForm" :rules="memberRules" ref="memberFormRef" label-width="100px">
-        <el-form-item label="用户ID" prop="userId">
-          <el-input-number v-model="memberForm.userId" :min="1" placeholder="请输入要添加的用户ID" />
+        <el-form-item label="搜索用户" prop="userQuery">
+          <el-input 
+            v-model="memberForm.userQuery" 
+            placeholder="请输入昵称或用户名搜索"
+            @input="handleUserSearch"
+          >
+            <template #append>
+              <el-button :icon="Search" @click="searchUsers" />
+            </template>
+          </el-input>
+        </el-form-item>
+        <el-form-item label="选择用户" prop="userId" v-if="searchResults.length > 0">
+          <el-select v-model="memberForm.userId" placeholder="请选择用户" style="width: 100%">
+            <el-option 
+              v-for="user in searchResults" 
+              :key="user.userId" 
+              :label="`${user.nickname || user.username} (ID: ${user.userId})`" 
+              :value="user.userId"
+            >
+              <span>{{ user.nickname || user.username }}</span>
+              <span style="color: #8492a6; font-size: 13px; margin-left: 10px">ID: {{ user.userId }}</span>
+            </el-option>
+          </el-select>
         </el-form-item>
         <el-form-item label="角色" prop="roleInTeam">
           <el-radio-group v-model="memberForm.roleInTeam">
             <el-radio label="member">成员</el-radio>
+            <el-radio label="vice-leader">副队长</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -168,6 +212,27 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- Transfer Captain Dialog -->
+    <el-dialog v-model="transferDialogVisible" title="转让队长" width="500px">
+      <el-alert 
+        title="转让队长后，您将成为普通成员，新队长将拥有管理团队的权限" 
+        type="warning" 
+        :closable="false"
+        style="margin-bottom: 20px"
+      />
+      <div v-if="transferTarget">
+        <p><strong>新队长：</strong>{{ transferTarget.nickname || transferTarget.username }} (ID: {{ transferTarget.userId }})</p>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="transferDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmTransferCaptain" :loading="submitting">
+            确认转让
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -176,7 +241,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { teamAPI } from '../api'
 import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 
 const authStore = useAuthStore()
 const teams = ref([])
@@ -185,12 +250,15 @@ const submitting = ref(false)
 const teamDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
 const addMemberDialogVisible = ref(false)
+const transferDialogVisible = ref(false)
 const isEditing = ref(false)
 const selectedTeam = ref(null)
 const teamFormRef = ref(null)
 const memberFormRef = ref(null)
 const teamMembers = ref({}) // Map of teamId -> members array
 const currentTeamMembers = ref([])
+const searchResults = ref([])
+const transferTarget = ref(null)
 
 const teamForm = ref({
   teamName: '',
@@ -199,6 +267,7 @@ const teamForm = ref({
 
 const memberForm = ref({
   userId: null,
+  userQuery: '',
   roleInTeam: 'member'
 })
 
@@ -210,7 +279,7 @@ const teamRules = {
 
 const memberRules = {
   userId: [
-    { required: true, message: '请输入用户ID', trigger: 'blur' }
+    { required: true, message: '请选择用户', trigger: 'change' }
   ]
 }
 
@@ -243,6 +312,17 @@ const loadTeamMembers = async (teamId) => {
   }
 }
 
+const loadTeamMembersWithDetails = async (teamId) => {
+  try {
+    const response = await teamAPI.getTeamMembersWithDetails(teamId)
+    if (response.success) {
+      currentTeamMembers.value = response.data
+    }
+  } catch (error) {
+    console.error('Failed to load team member details:', error)
+  }
+}
+
 const getTeamMemberCount = (teamId) => {
   return teamMembers.value[teamId]?.length || 0
 }
@@ -252,6 +332,13 @@ const isTeamLeader = (team) => {
   if (!members) return false
   const currentUserMembership = members.find(m => m.userId === authStore.user.userId)
   return currentUserMembership?.roleInTeam === 'leader'
+}
+
+const getMyRole = (team) => {
+  const members = teamMembers.value[team.teamId]
+  if (!members) return null
+  const currentUserMembership = members.find(m => m.userId === authStore.user.userId)
+  return currentUserMembership?.roleInTeam
 }
 
 const formatDate = (dateStr) => {
@@ -323,16 +410,44 @@ const deleteTeam = async (teamId) => {
 
 const viewTeamDetail = async (team) => {
   selectedTeam.value = team
-  currentTeamMembers.value = teamMembers.value[team.teamId] || []
+  await loadTeamMembersWithDetails(team.teamId)
   detailDialogVisible.value = true
 }
 
 const showAddMemberDialog = () => {
   memberForm.value = {
     userId: null,
+    userQuery: '',
     roleInTeam: 'member'
   }
+  searchResults.value = []
   addMemberDialogVisible.value = true
+}
+
+const handleUserSearch = () => {
+  // Debounce or direct search
+  if (memberForm.value.userQuery && memberForm.value.userQuery.length >= 2) {
+    searchUsers()
+  }
+}
+
+const searchUsers = async () => {
+  if (!memberForm.value.userQuery || memberForm.value.userQuery.trim().length === 0) {
+    ElMessage.warning('请输入搜索关键词')
+    return
+  }
+  
+  try {
+    const response = await teamAPI.searchUsers(memberForm.value.userQuery)
+    if (response.success) {
+      searchResults.value = response.data
+      if (searchResults.value.length === 0) {
+        ElMessage.info('未找到匹配的用户')
+      }
+    }
+  } catch (error) {
+    ElMessage.error('搜索用户失败')
+  }
 }
 
 const submitAddMember = async () => {
@@ -352,7 +467,7 @@ const submitAddMember = async () => {
         ElMessage.success('成员添加成功')
         addMemberDialogVisible.value = false
         await loadTeamMembers(selectedTeam.value.teamId)
-        currentTeamMembers.value = teamMembers.value[selectedTeam.value.teamId] || []
+        await loadTeamMembersWithDetails(selectedTeam.value.teamId)
       }
     } catch (error) {
       ElMessage.error(error.message || '添加成员失败')
@@ -368,10 +483,35 @@ const removeMember = async (teamId, userId) => {
     if (response.success) {
       ElMessage.success('成员已移除')
       await loadTeamMembers(teamId)
-      currentTeamMembers.value = teamMembers.value[teamId] || []
+      await loadTeamMembersWithDetails(teamId)
     }
   } catch (error) {
     ElMessage.error(error.message || '移除成员失败')
+  }
+}
+
+const showTransferDialog = (member) => {
+  transferTarget.value = member
+  transferDialogVisible.value = true
+}
+
+const confirmTransferCaptain = async () => {
+  if (!transferTarget.value) return
+  
+  submitting.value = true
+  try {
+    const response = await teamAPI.transferCaptain(selectedTeam.value.teamId, transferTarget.value.userId)
+    if (response.success) {
+      ElMessage.success('队长移交成功')
+      transferDialogVisible.value = false
+      await loadTeamMembers(selectedTeam.value.teamId)
+      await loadTeamMembersWithDetails(selectedTeam.value.teamId)
+      await loadTeams() // Reload to update role tags
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '队长移交失败')
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -436,5 +576,10 @@ onMounted(() => {
 .section-header h3 {
   margin: 0;
   color: #303133;
+}
+
+.current-user {
+  font-weight: bold;
+  color: #409eff;
 }
 </style>

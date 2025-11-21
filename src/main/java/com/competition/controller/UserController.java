@@ -64,6 +64,32 @@ public class UserController {
         }
     }
 
+    @PutMapping("/{id}/profile")
+    public ResponseEntity<ApiResponse<User>> updateUserProfile(
+            @PathVariable Integer id,
+            @RequestBody Map<String, Object> updates,
+            HttpServletRequest request) {
+        try {
+            // Get current user ID from JWT token
+            String token = jwtTokenProvider.resolveToken(request);
+            if (token == null || !jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(401).body(ApiResponse.error("未授权"));
+            }
+            
+            Integer currentUserId = jwtTokenProvider.getUserIdFromToken(token);
+            
+            // Users can only update their own profile, unless they're admin
+            if (!currentUserId.equals(id)) {
+                return ResponseEntity.status(403).body(ApiResponse.error("只能修改自己的个人信息"));
+            }
+            
+            User user = userService.updateUserProfile(id, updates);
+            return ResponseEntity.ok(ApiResponse.success("个人信息更新成功", user));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to update profile: " + e.getMessage()));
+        }
+    }
+
     @PutMapping("/{id}/activate")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<User>> activateUser(@PathVariable Integer id) {

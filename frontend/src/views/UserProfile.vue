@@ -25,6 +25,9 @@
             </el-tag>
           </el-space>
         </el-descriptions-item>
+        <el-descriptions-item label="昵称" label-class-name="label" v-if="userDetails">
+          <el-text>{{ userDetails.nickname || '-' }}</el-text>
+        </el-descriptions-item>
         <el-descriptions-item label="真实姓名" label-class-name="label" v-if="userDetails">
           <el-text>{{ userDetails.realName || '-' }}</el-text>
         </el-descriptions-item>
@@ -53,6 +56,10 @@
           <el-text>{{ formatDate(userDetails.createdAt) }}</el-text>
         </el-descriptions-item>
       </el-descriptions>
+
+      <div class="profile-actions">
+        <el-button type="primary" @click="showEditDialog">修改个人信息</el-button>
+      </div>
 
       <div class="account-actions" v-if="!authStore.isAdmin">
         <!-- <el-divider /> -->
@@ -128,6 +135,41 @@
       </div>
     </el-card>
   </div>
+
+  <!-- Edit Profile Dialog -->
+  <el-dialog v-model="editDialogVisible" title="修改个人信息" width="600px">
+    <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="100px">
+      <el-form-item label="昵称" prop="nickname">
+        <el-input v-model="editForm.nickname" placeholder="请输入昵称（可选）" />
+      </el-form-item>
+      <el-form-item label="真实姓名" prop="realName">
+        <el-input v-model="editForm.realName" placeholder="请输入真实姓名（可选）" />
+      </el-form-item>
+      <el-form-item label="邮箱" prop="email">
+        <el-input v-model="editForm.email" placeholder="请输入邮箱（可选）" />
+      </el-form-item>
+      <el-form-item label="手机号" prop="phone">
+        <el-input v-model="editForm.phone" placeholder="请输入手机号（可选）" />
+      </el-form-item>
+      <el-form-item label="学号" prop="studentNo">
+        <el-input v-model="editForm.studentNo" placeholder="请输入学号（可选）" />
+      </el-form-item>
+      <el-form-item label="学校" prop="school">
+        <el-input v-model="editForm.school" placeholder="请输入学校（可选）" />
+      </el-form-item>
+      <el-form-item label="院系" prop="department">
+        <el-input v-model="editForm.department" placeholder="请输入院系（可选）" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitEditForm" :loading="submitting">
+          确定
+        </el-button>
+      </span>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
@@ -140,6 +182,25 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 const router = useRouter()
 const authStore = useAuthStore()
 const userDetails = ref(null)
+const editDialogVisible = ref(false)
+const submitting = ref(false)
+const editFormRef = ref(null)
+
+const editForm = ref({
+  nickname: '',
+  realName: '',
+  email: '',
+  phone: '',
+  studentNo: '',
+  school: '',
+  department: ''
+})
+
+const editRules = {
+  email: [
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+  ]
+}
 
 const loadUserDetails = async () => {
   try {
@@ -150,6 +211,43 @@ const loadUserDetails = async () => {
   } catch (error) {
     ElMessage.error('加载用户详情失败')
   }
+}
+
+const showEditDialog = () => {
+  if (userDetails.value) {
+    editForm.value = {
+      nickname: userDetails.value.nickname || '',
+      realName: userDetails.value.realName || '',
+      email: userDetails.value.email || '',
+      phone: userDetails.value.phone || '',
+      studentNo: userDetails.value.studentNo || '',
+      school: userDetails.value.school || '',
+      department: userDetails.value.department || ''
+    }
+  }
+  editDialogVisible.value = true
+}
+
+const submitEditForm = async () => {
+  if (!editFormRef.value) return
+  
+  await editFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    
+    submitting.value = true
+    try {
+      const response = await userAPI.updateUserProfile(authStore.user?.userId, editForm.value)
+      if (response.success) {
+        ElMessage.success('个人信息更新成功')
+        editDialogVisible.value = false
+        await loadUserDetails()
+      }
+    } catch (error) {
+      ElMessage.error(error.response?.data?.message || '更新失败')
+    } finally {
+      submitting.value = false
+    }
+  })
 }
 
 const deactivateAccount = async () => {
@@ -236,6 +334,12 @@ onMounted(() => {
 }
 
 .account-actions {
+  margin-top: 20px;
+  padding: 20px;
+  text-align: center;
+}
+
+.profile-actions {
   margin-top: 20px;
   padding: 20px;
   text-align: center;
