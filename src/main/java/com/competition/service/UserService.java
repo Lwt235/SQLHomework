@@ -27,13 +27,13 @@ public class UserService {
 
     public List<User> getAllUsers() {
         return userRepository.findAll().stream()
-                .filter(user -> !user.getIsDeleted())
+                .filter(user -> !user.getDeleted())
                 .collect(Collectors.toList());
     }
 
     public List<User> getInactiveUsers() {
         return userRepository.findAll().stream()
-                .filter(user -> !user.getIsDeleted() && "inactive".equals(user.getUserStatus()))
+                .filter(user -> !user.getDeleted() && "inactive".equals(user.getUserStatus()))
                 .collect(Collectors.toList());
     }
 
@@ -58,7 +58,7 @@ public class UserService {
 
     public void deleteUser(Integer userId) {
         User user = getUserById(userId);
-        user.setIsDeleted(true);
+        user.setDeleted(true);
         userRepository.save(user);
     }
 
@@ -92,7 +92,7 @@ public class UserService {
 
     public List<Role> getAllRoles() {
         return roleRepository.findAll().stream()
-                .filter(role -> !role.getIsDeleted())
+                .filter(role -> !role.getDeleted())
                 .collect(Collectors.toList());
     }
 
@@ -107,7 +107,7 @@ public class UserService {
         }
         
         return roleRepository.findAllById(roleIds).stream()
-                .filter(role -> !role.getIsDeleted())
+                .filter(role -> !role.getDeleted())
                 .collect(Collectors.toList());
     }
 }

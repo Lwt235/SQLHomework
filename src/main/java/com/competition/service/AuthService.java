@@ -113,7 +113,7 @@ public class AuthService {
         }
         
         // Soft delete the account
-        user.setIsDeleted(true);
+        user.setDeleted(true);
         userRepository.save(user);
     }
 }

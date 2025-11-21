@@ -15,7 +15,9 @@ public class RegistrationService {
     private RegistrationRepository registrationRepository;
 
     public List<Registration> getAllRegistrations() {
-        return registrationRepository.findAll();
+        return registrationRepository.findAll().stream()
+                .filter(registration -> !registration.getDeleted())
+                .collect(java.util.stream.Collectors.toList());
     }
 
     public Optional<Registration> getRegistrationById(Integer id) {
