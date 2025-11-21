@@ -44,6 +44,18 @@ public class UserService {
 
     public User updateUserStatus(Integer userId, String status) {
         User user = getUserById(userId);
+        
+        // Validate status value
+        if (status == null || status.trim().isEmpty()) {
+            throw new RuntimeException("用户状态不能为空");
+        }
+        
+        // Validate status is one of the allowed values
+        List<String> allowedStatuses = java.util.Arrays.asList("active", "inactive", "suspended");
+        if (!allowedStatuses.contains(status)) {
+            throw new RuntimeException("无效的用户状态: " + status);
+        }
+        
         user.setUserStatus(status);
         return userRepository.save(user);
     }
