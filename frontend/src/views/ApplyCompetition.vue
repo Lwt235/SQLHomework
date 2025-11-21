@@ -140,6 +140,7 @@ const submitting = ref(false)
 const availableCompetitions = ref([])
 const selectedCompetition = ref(null)
 const registrationFormRef = ref(null)
+const preSelectedCompetitionId = ref(null)
 
 const registrationForm = ref({
   participationType: 'individual',
@@ -171,6 +172,17 @@ const loadAvailableCompetitions = async () => {
                now >= signupStart && now <= signupEnd && 
                (comp.competitionStatus === 'published' || comp.competitionStatus === 'ongoing')
       })
+      
+      // If a competition ID was provided in query params, pre-select it
+      if (preSelectedCompetitionId.value) {
+        const preSelected = availableCompetitions.value.find(
+          comp => comp.competitionId === preSelectedCompetitionId.value
+        )
+        if (preSelected) {
+          selectedCompetition.value = preSelected
+          activeStep.value = 1
+        }
+      }
     }
   } catch (error) {
     ElMessage.error('加载竞赛列表失败')
@@ -242,6 +254,11 @@ const submitRegistration = async () => {
 }
 
 onMounted(() => {
+  // Get competition ID from query params if provided
+  const route = router.currentRoute.value
+  if (route.query.competitionId) {
+    preSelectedCompetitionId.value = parseInt(route.query.competitionId)
+  }
   loadAvailableCompetitions()
 })
 </script>

@@ -48,6 +48,14 @@
               暂停
             </el-button>
             <el-button 
+              v-if="row.userStatus === 'suspended'" 
+              type="success" 
+              size="small" 
+              @click="activateUser(row.userId)"
+            >
+              激活
+            </el-button>
+            <el-button 
               type="primary" 
               size="small" 
               @click="showRoleDialog(row)"

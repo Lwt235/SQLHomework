@@ -55,7 +55,7 @@
             <el-button type="primary" size="small" @click="viewDetail(row.competitionId)">
               查看详情
             </el-button>
-            <el-button v-if="authStore.isAuthenticated && canApply(row)" type="success" size="small" @click="applyCompetition(row)">
+            <el-button v-if="authStore.isStudent && canApply(row)" type="success" size="small" @click="navigateToApply(row.competitionId)">
               报名
             </el-button>
           </template>
@@ -112,19 +112,11 @@ const viewDetail = (id) => {
   router.push(`/competitions/${id}`)
 }
 
-const applyCompetition = async (competition) => {
-  try {
-    const response = await registrationAPI.createRegistration({
-      competitionId: competition.competitionId,
-      userId: authStore.user.userId,
-      remark: ''
-    })
-    if (response.success) {
-      ElMessage.success('报名成功，等待审核')
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '报名失败')
-  }
+const navigateToApply = (competitionId) => {
+  router.push({
+    name: 'ApplyCompetition',
+    query: { competitionId }
+  })
 }
 
 onMounted(() => {

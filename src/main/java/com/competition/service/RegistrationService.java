@@ -3,9 +3,13 @@ package com.competition.service;
 import com.competition.entity.Registration;
 import com.competition.entity.Competition;
 import com.competition.entity.User;
+import com.competition.entity.UserRole;
+import com.competition.entity.Role;
 import com.competition.repository.RegistrationRepository;
 import com.competition.repository.CompetitionRepository;
 import com.competition.repository.UserRepository;
+import com.competition.repository.UserRoleRepository;
+import com.competition.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -24,6 +28,12 @@ public class RegistrationService {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+    
+    @Autowired
+    private RoleRepository roleRepository;
 
     public List<Registration> getAllRegistrations() {
         return registrationRepository.findAll().stream()
@@ -65,6 +75,21 @@ public class RegistrationService {
             
             if (!UserService.STATUS_ACTIVE.equals(user.getUserStatus())) {
                 throw new RuntimeException("只有激活状态的用户才能报名参赛");
+            }
+            
+            // Check if user has student role
+            List<UserRole> userRoles = userRoleRepository.findByUserId(registration.getUserId());
+            boolean isStudent = false;
+            for (UserRole userRole : userRoles) {
+                Optional<Role> role = roleRepository.findById(userRole.getRoleId());
+                if (role.isPresent() && "STUDENT".equalsIgnoreCase(role.get().getRoleCode())) {
+                    isStudent = true;
+                    break;
+                }
+            }
+            
+            if (!isStudent) {
+                throw new RuntimeException("只有学生账号可以报名参赛");
             }
             
             // Check if user already registered for this competition

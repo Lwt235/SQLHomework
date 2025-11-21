@@ -46,6 +46,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/teams',
+    name: 'Teams',
+    component: () => import('../views/Teams.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/my-submissions',
     name: 'MySubmissions',
     component: () => import('../views/MySubmissions.vue'),
