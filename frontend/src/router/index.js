@@ -17,6 +17,12 @@ const routes = [
     component: () => import('../views/Register.vue')
   },
   {
+    path: '/profile',
+    name: 'UserProfile',
+    component: () => import('../views/UserProfile.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/competitions',
     name: 'Competitions',
     component: () => import('../views/Competitions.vue')
@@ -34,9 +40,21 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/apply-competition',
+    name: 'ApplyCompetition',
+    component: () => import('../views/ApplyCompetition.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/my-submissions',
     name: 'MySubmissions',
     component: () => import('../views/MySubmissions.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/teacher-review',
+    name: 'TeacherReview',
+    component: () => import('../views/TeacherReview.vue'),
     meta: { requiresAuth: true }
   },
   {

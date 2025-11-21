@@ -2,6 +2,7 @@ package com.competition.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -10,10 +11,12 @@ public class JwtResponse {
     private String type = "Bearer";
     private Integer userId;
     private String username;
+    private List<String> roles;
     
-    public JwtResponse(String token, Integer userId, String username) {
+    public JwtResponse(String token, Integer userId, String username, List<String> roles) {
         this.token = token;
         this.userId = userId;
         this.username = username;
+        this.roles = roles;
     }
 }

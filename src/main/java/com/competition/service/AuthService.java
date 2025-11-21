@@ -4,7 +4,11 @@ import com.competition.dto.JwtResponse;
 import com.competition.dto.LoginRequest;
 import com.competition.dto.RegisterRequest;
 import com.competition.entity.User;
+import com.competition.entity.UserRole;
+import com.competition.entity.Role;
 import com.competition.repository.UserRepository;
+import com.competition.repository.UserRoleRepository;
+import com.competition.repository.RoleRepository;
 import com.competition.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,6 +16,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
@@ -28,6 +35,12 @@ public class AuthService {
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
     public JwtResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
@@ -38,7 +51,16 @@ public class AuthService {
 
         String token = tokenProvider.generateToken(user.getUsername(), user.getUserId());
 
-        return new JwtResponse(token, user.getUserId(), user.getUsername());
+        // Get user roles
+        List<UserRole> userRoles = userRoleRepository.findByUserId(user.getUserId());
+        List<String> roleCodes = userRoles.stream()
+                .map(ur -> roleRepository.findById(ur.getRoleId())
+                        .map(Role::getRoleCode)
+                        .orElse(null))
+                .filter(code -> code != null)
+                .collect(Collectors.toList());
+
+        return new JwtResponse(token, user.getUserId(), user.getUsername(), roleCodes);
     }
 
     public User register(RegisterRequest request) {

@@ -36,38 +36,79 @@
     </el-card>
 
     <!-- Create/Edit Dialog -->
-    <el-dialog v-model="showCreateDialog" title="竞赛信息" width="800px">
-      <el-form :model="competitionForm" label-width="120px">
-        <el-form-item label="竞赛名称">
-          <el-input v-model="competitionForm.competitionTitle" />
+    <el-dialog v-model="showCreateDialog" title="创建竞赛" width="800px">
+      <el-form :model="competitionForm" :rules="competitionRules" ref="competitionFormRef" label-width="120px">
+        <el-form-item label="竞赛名称" prop="competitionTitle">
+          <el-input v-model="competitionForm.competitionTitle" placeholder="请输入竞赛名称" />
         </el-form-item>
-        <el-form-item label="简称">
-          <el-input v-model="competitionForm.shortTitle" />
+        <el-form-item label="简称" prop="shortTitle">
+          <el-input v-model="competitionForm.shortTitle" placeholder="请输入竞赛简称" />
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="competitionForm.description" type="textarea" :rows="4" />
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="competitionForm.description" type="textarea" :rows="4" placeholder="请输入竞赛描述" />
         </el-form-item>
-        <el-form-item label="类别">
-          <el-input v-model="competitionForm.category" />
+        <el-form-item label="类别" prop="category">
+          <el-input v-model="competitionForm.category" placeholder="例如：程序设计、创新创业等" />
         </el-form-item>
-        <el-form-item label="级别">
-          <el-select v-model="competitionForm.level">
+        <el-form-item label="级别" prop="level">
+          <el-select v-model="competitionForm.level" style="width: 100%">
             <el-option label="校级" value="school" />
             <el-option label="省级" value="provincial" />
             <el-option label="国家级" value="national" />
             <el-option label="国际级" value="international" />
           </el-select>
         </el-form-item>
-        <el-form-item label="主办方">
-          <el-input v-model="competitionForm.organizer" />
+        <el-form-item label="主办方" prop="organizer">
+          <el-input v-model="competitionForm.organizer" placeholder="请输入主办单位" />
         </el-form-item>
-        <el-form-item label="最大团队人数">
-          <el-input-number v-model="competitionForm.maxTeamSize" :min="1" />
+        <el-form-item label="竞赛状态" prop="competitionStatus">
+          <el-select v-model="competitionForm.competitionStatus" style="width: 100%">
+            <el-option label="草稿" value="draft" />
+            <el-option label="已发布" value="published" />
+            <el-option label="进行中" value="ongoing" />
+            <el-option label="已结束" value="finished" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="报名开始时间" prop="signupStart">
+          <el-date-picker 
+            v-model="competitionForm.signupStart" 
+            type="datetime" 
+            placeholder="选择报名开始时间"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="报名截止时间" prop="signupEnd">
+          <el-date-picker 
+            v-model="competitionForm.signupEnd" 
+            type="datetime" 
+            placeholder="选择报名截止时间"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="作品提交开始" prop="submitStart">
+          <el-date-picker 
+            v-model="competitionForm.submitStart" 
+            type="datetime" 
+            placeholder="选择作品提交开始时间"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="作品提交截止" prop="submitEnd">
+          <el-date-picker 
+            v-model="competitionForm.submitEnd" 
+            type="datetime" 
+            placeholder="选择作品提交截止时间"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="最大团队人数" prop="maxTeamSize">
+          <el-input-number v-model="competitionForm.maxTeamSize" :min="1" :max="20" />
+          <span style="margin-left: 10px; color: #909399;">个人参赛设为1</span>
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showCreateDialog = false">取消</el-button>
-        <el-button type="primary" @click="saveCompetition">保存</el-button>
+        <el-button type="primary" @click="saveCompetition" :loading="saving">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -80,7 +121,9 @@ import { ElMessage } from 'element-plus'
 
 const competitions = ref([])
 const loading = ref(false)
+const saving = ref(false)
 const showCreateDialog = ref(false)
+const competitionFormRef = ref(null)
 const competitionForm = ref({
   competitionTitle: '',
   shortTitle: '',
@@ -88,8 +131,40 @@ const competitionForm = ref({
   category: '',
   level: 'school',
   organizer: '',
+  competitionStatus: 'draft',
+  signupStart: null,
+  signupEnd: null,
+  submitStart: null,
+  submitEnd: null,
   maxTeamSize: 5
 })
+
+const competitionRules = {
+  competitionTitle: [
+    { required: true, message: '请输入竞赛名称', trigger: 'blur' }
+  ],
+  shortTitle: [
+    { required: true, message: '请输入竞赛简称', trigger: 'blur' }
+  ],
+  level: [
+    { required: true, message: '请选择竞赛级别', trigger: 'change' }
+  ],
+  organizer: [
+    { required: true, message: '请输入主办方', trigger: 'blur' }
+  ],
+  signupStart: [
+    { required: true, message: '请选择报名开始时间', trigger: 'change' }
+  ],
+  signupEnd: [
+    { required: true, message: '请选择报名截止时间', trigger: 'change' }
+  ],
+  submitStart: [
+    { required: true, message: '请选择作品提交开始时间', trigger: 'change' }
+  ],
+  submitEnd: [
+    { required: true, message: '请选择作品提交截止时间', trigger: 'change' }
+  ]
+}
 
 const loadCompetitions = async () => {
   loading.value = true
@@ -106,16 +181,42 @@ const loadCompetitions = async () => {
 }
 
 const saveCompetition = async () => {
-  try {
-    const response = await competitionAPI.createCompetition(competitionForm.value)
-    if (response.success) {
-      ElMessage.success('竞赛创建成功')
-      showCreateDialog.value = false
-      loadCompetitions()
+  if (!competitionFormRef.value) return
+  
+  await competitionFormRef.value.validate(async (valid) => {
+    if (valid) {
+      saving.value = true
+      try {
+        const response = await competitionAPI.createCompetition(competitionForm.value)
+        if (response.success) {
+          ElMessage.success('竞赛创建成功')
+          showCreateDialog.value = false
+          loadCompetitions()
+          // Reset form
+          competitionForm.value = {
+            competitionTitle: '',
+            shortTitle: '',
+            description: '',
+            category: '',
+            level: 'school',
+            organizer: '',
+            competitionStatus: 'draft',
+            signupStart: null,
+            signupEnd: null,
+            submitStart: null,
+            submitEnd: null,
+            maxTeamSize: 5
+          }
+        } else {
+          ElMessage.error(response.message || '保存竞赛失败')
+        }
+      } catch (error) {
+        ElMessage.error(error.message || '保存竞赛失败')
+      } finally {
+        saving.value = false
+      }
     }
-  } catch (error) {
-    ElMessage.error('保存竞赛失败')
-  }
+  })
 }
 
 const editCompetition = (competition) => {
