@@ -10,11 +10,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class UserService {
+    
+    // User status constants
+    public static final String STATUS_ACTIVE = "active";
+    public static final String STATUS_INACTIVE = "inactive";
+    public static final String STATUS_SUSPENDED = "suspended";
+    private static final List<String> ALLOWED_STATUSES = Arrays.asList(STATUS_ACTIVE, STATUS_INACTIVE, STATUS_SUSPENDED);
 
     @Autowired
     private UserRepository userRepository;
@@ -33,7 +40,7 @@ public class UserService {
 
     public List<User> getInactiveUsers() {
         return userRepository.findAll().stream()
-                .filter(user -> !user.getDeleted() && "inactive".equals(user.getUserStatus()))
+                .filter(user -> !user.getDeleted() && STATUS_INACTIVE.equals(user.getUserStatus()))
                 .collect(Collectors.toList());
     }
 
@@ -51,8 +58,7 @@ public class UserService {
         }
         
         // Validate status is one of the allowed values
-        List<String> allowedStatuses = java.util.Arrays.asList("active", "inactive", "suspended");
-        if (!allowedStatuses.contains(status)) {
+        if (!ALLOWED_STATUSES.contains(status)) {
             throw new RuntimeException("无效的用户状态: " + status);
         }
         
@@ -61,11 +67,11 @@ public class UserService {
     }
 
     public User activateUser(Integer userId) {
-        return updateUserStatus(userId, "active");
+        return updateUserStatus(userId, STATUS_ACTIVE);
     }
 
     public User suspendUser(Integer userId) {
-        return updateUserStatus(userId, "suspended");
+        return updateUserStatus(userId, STATUS_SUSPENDED);
     }
 
     public void deleteUser(Integer userId) {

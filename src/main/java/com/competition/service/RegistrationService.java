@@ -63,7 +63,7 @@ public class RegistrationService {
                 throw new RuntimeException("用户账号已被删除");
             }
             
-            if (!"active".equals(user.getUserStatus())) {
+            if (!UserService.STATUS_ACTIVE.equals(user.getUserStatus())) {
                 throw new RuntimeException("只有激活状态的用户才能报名参赛");
             }
             
