@@ -36,7 +36,7 @@
     </el-card>
 
     <!-- Create/Edit Dialog -->
-    <el-dialog v-model="showCreateDialog" title="创建竞赛" width="800px">
+    <el-dialog v-model="showCreateDialog" :title="editingCompetitionId ? '编辑竞赛' : '创建竞赛'" width="800px">
       <el-form :model="competitionForm" :rules="competitionRules" ref="competitionFormRef" label-width="120px">
         <el-form-item label="竞赛名称" prop="competitionTitle">
           <el-input v-model="competitionForm.competitionTitle" placeholder="请输入竞赛名称" />
@@ -107,7 +107,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button @click="showCreateDialog = false; editingCompetitionId = null">取消</el-button>
         <el-button type="primary" @click="saveCompetition" :loading="saving">保存</el-button>
       </template>
     </el-dialog>
@@ -141,6 +141,7 @@ const getInitialCompetitionForm = () => ({
 })
 
 const competitionForm = ref(getInitialCompetitionForm())
+const editingCompetitionId = ref(null)
 
 const competitionRules = {
   competitionTitle: [
@@ -190,13 +191,22 @@ const saveCompetition = async () => {
     if (valid) {
       saving.value = true
       try {
-        const response = await competitionAPI.createCompetition(competitionForm.value)
+        let response
+        if (editingCompetitionId.value) {
+          // Update existing competition
+          response = await competitionAPI.updateCompetition(editingCompetitionId.value, competitionForm.value)
+        } else {
+          // Create new competition
+          response = await competitionAPI.createCompetition(competitionForm.value)
+        }
+        
         if (response.success) {
-          ElMessage.success('竞赛创建成功')
+          ElMessage.success(editingCompetitionId.value ? '竞赛更新成功' : '竞赛创建成功')
           showCreateDialog.value = false
           loadCompetitions()
           // Reset form
           competitionForm.value = getInitialCompetitionForm()
+          editingCompetitionId.value = null
         } else {
           ElMessage.error(response.message || '保存竞赛失败')
         }
@@ -210,7 +220,23 @@ const saveCompetition = async () => {
 }
 
 const editCompetition = (competition) => {
-  ElMessage.info('编辑功能开发中')
+  // Populate form with competition data
+  competitionForm.value = {
+    competitionTitle: competition.competitionTitle,
+    shortTitle: competition.shortTitle,
+    description: competition.description,
+    category: competition.category,
+    level: competition.level,
+    organizer: competition.organizer,
+    competitionStatus: competition.competitionStatus,
+    signupStart: competition.signupStart ? new Date(competition.signupStart) : null,
+    signupEnd: competition.signupEnd ? new Date(competition.signupEnd) : null,
+    submitStart: competition.submitStart ? new Date(competition.submitStart) : null,
+    submitEnd: competition.submitEnd ? new Date(competition.submitEnd) : null,
+    maxTeamSize: competition.maxTeamSize || 5
+  }
+  editingCompetitionId.value = competition.competitionId
+  showCreateDialog.value = true
 }
 
 const deleteCompetition = async (id) => {

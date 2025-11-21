@@ -23,6 +23,9 @@ public class Registration {
     @Column(name = "user_id")
     private Integer userId;
     
+    @Column(name = "team_name", length = 100)
+    private String teamName;
+    
     @Column(name = "audit_user_id")
     private Integer auditUserId;
     
