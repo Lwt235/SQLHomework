@@ -16,7 +16,6 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     boolean existsByEmail(String email);
     
     @Query("SELECT u FROM User u WHERE u.deleted = false AND u.userStatus = 'active' AND " +
-           "(LOWER(u.nickname) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')))")
+           "LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<User> searchByNicknameOrUsername(@Param("query") String query);
 }

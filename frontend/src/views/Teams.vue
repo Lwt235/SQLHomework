@@ -125,15 +125,15 @@
 
           <el-table :data="currentTeamMembers" style="width: 100%; margin-top: 20px">
             <el-table-column label="用户ID" prop="userId" width="100" />
-            <el-table-column label="昵称" prop="nickname" width="150">
+            <el-table-column label="用户名(昵称)" prop="username" width="180">
               <template #default="{ row }">
                 <span :class="{ 'current-user': row.isCurrentUser }">
-                  {{ row.nickname || '-' }}
+                  {{ row.username || '-' }}
                   <el-tag v-if="row.isCurrentUser" type="primary" size="small" style="margin-left: 8px">我</el-tag>
                 </span>
               </template>
             </el-table-column>
-            <el-table-column label="用户名" prop="username" width="150" />
+            <el-table-column label="真实姓名" prop="realName" width="150" />
             <el-table-column label="角色" prop="roleInTeam" width="120">
               <template #default="{ row }">
                 <el-tag v-if="row.roleInTeam === 'leader'" type="warning">队长</el-tag>
@@ -175,7 +175,7 @@
         <el-form-item label="搜索用户" prop="userQuery">
           <el-input 
             v-model="memberForm.userQuery" 
-            placeholder="请输入昵称或用户名搜索"
+            placeholder="请输入用户名搜索"
             @input="handleUserSearch"
           >
             <template #append>
@@ -188,10 +188,10 @@
             <el-option 
               v-for="user in searchResults" 
               :key="user.userId" 
-              :label="`${user.nickname || user.username} (ID: ${user.userId})`" 
+              :label="`${user.username} (ID: ${user.userId})`" 
               :value="user.userId"
             >
-              <span>{{ user.nickname || user.username }}</span>
+              <span>{{ user.username }}</span>
               <span style="color: #8492a6; font-size: 13px; margin-left: 10px">ID: {{ user.userId }}</span>
             </el-option>
           </el-select>
@@ -222,7 +222,7 @@
         style="margin-bottom: 20px"
       />
       <div v-if="transferTarget">
-        <p><strong>新队长：</strong>{{ transferTarget.nickname || transferTarget.username }} (ID: {{ transferTarget.userId }})</p>
+        <p><strong>新队长：</strong>{{ transferTarget.username }} (ID: {{ transferTarget.userId }})</p>
       </div>
       <template #footer>
         <span class="dialog-footer">

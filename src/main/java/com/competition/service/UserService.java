@@ -53,11 +53,7 @@ public class UserService {
     public User updateUserProfile(Integer userId, Map<String, Object> updates) {
         User user = getUserById(userId);
         
-        // Update allowed fields
-        if (updates.containsKey("nickname")) {
-            String nickname = (String) updates.get("nickname");
-            user.setNickname(nickname);
-        }
+        // Update allowed fields (username is not editable as it's the login credential)
         if (updates.containsKey("realName")) {
             String realName = (String) updates.get("realName");
             user.setRealName(realName);

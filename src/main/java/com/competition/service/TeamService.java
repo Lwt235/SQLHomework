@@ -182,8 +182,7 @@ public class TeamService {
             // Get user details from map
             User user = userMap.get(member.getUserId());
             if (user != null) {
-                dto.setUsername(user.getUsername());
-                dto.setNickname(user.getNickname());
+                dto.setUsername(user.getUsername()); // username is the nickname
                 dto.setRealName(user.getRealName());
             }
             

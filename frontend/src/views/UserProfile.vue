@@ -25,8 +25,8 @@
             </el-tag>
           </el-space>
         </el-descriptions-item>
-        <el-descriptions-item label="昵称" label-class-name="label" v-if="userDetails">
-          <el-text>{{ userDetails.nickname || '-' }}</el-text>
+        <el-descriptions-item label="用户名(昵称)" label-class-name="label" :span="2">
+          <el-text>{{ authStore.user?.username }}</el-text>
         </el-descriptions-item>
         <el-descriptions-item label="真实姓名" label-class-name="label" v-if="userDetails">
           <el-text>{{ userDetails.realName || '-' }}</el-text>
@@ -138,10 +138,13 @@
 
   <!-- Edit Profile Dialog -->
   <el-dialog v-model="editDialogVisible" title="修改个人信息" width="600px">
+    <el-alert 
+      title="提示：用户名(昵称)是登录凭证，不可修改" 
+      type="info" 
+      :closable="false"
+      style="margin-bottom: 20px"
+    />
     <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="100px">
-      <el-form-item label="昵称" prop="nickname">
-        <el-input v-model="editForm.nickname" placeholder="请输入昵称（可选）" />
-      </el-form-item>
       <el-form-item label="真实姓名" prop="realName">
         <el-input v-model="editForm.realName" placeholder="请输入真实姓名（可选）" />
       </el-form-item>
@@ -187,7 +190,6 @@ const submitting = ref(false)
 const editFormRef = ref(null)
 
 const editForm = ref({
-  nickname: '',
   realName: '',
   email: '',
   phone: '',
@@ -216,7 +218,6 @@ const loadUserDetails = async () => {
 const showEditDialog = () => {
   if (userDetails.value) {
     editForm.value = {
-      nickname: userDetails.value.nickname || '',
       realName: userDetails.value.realName || '',
       email: userDetails.value.email || '',
       phone: userDetails.value.phone || '',
