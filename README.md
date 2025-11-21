@@ -76,7 +76,7 @@ mvn clean compile
 mvn spring-boot:run
 ```
 
-4. 后端服务将在 `http://localhost:8080` 启动
+4. 后端服务将在 `http://localhost:8086` 启动
 
 ### 前端启动
 
