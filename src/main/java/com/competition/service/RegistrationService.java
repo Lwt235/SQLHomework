@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class RegistrationService {
@@ -17,7 +18,7 @@ public class RegistrationService {
     public List<Registration> getAllRegistrations() {
         return registrationRepository.findAll().stream()
                 .filter(registration -> !registration.getDeleted())
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     public Optional<Registration> getRegistrationById(Integer id) {
