@@ -79,12 +79,14 @@ public class UserService {
                 throw new RuntimeException("Some role IDs are invalid");
             }
             
+            List<UserRole> newUserRoles = new java.util.ArrayList<>();
             for (Integer roleId : roleIds) {
                 UserRole userRole = new UserRole();
                 userRole.setUserId(userId);
                 userRole.setRoleId(roleId);
-                userRoleRepository.save(userRole);
+                newUserRoles.add(userRole);
             }
+            userRoleRepository.saveAll(newUserRoles);
         }
     }
 

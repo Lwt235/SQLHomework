@@ -105,8 +105,7 @@ public class AuthService {
         if (!roleIds.isEmpty()) {
             List<Role> roles = roleRepository.findAllById(roleIds);
             boolean isAdmin = roles.stream()
-                    .anyMatch(role -> "admin".equalsIgnoreCase(role.getRoleCode()) || 
-                                     "ADMIN".equalsIgnoreCase(role.getRoleCode()));
+                    .anyMatch(role -> "admin".equalsIgnoreCase(role.getRoleCode()));
             
             if (isAdmin) {
                 throw new RuntimeException("管理员账号不允许注销");
