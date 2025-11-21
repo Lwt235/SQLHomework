@@ -59,7 +59,7 @@ public class AuthService {
         user.setSchool(request.getSchool());
         user.setDepartment(request.getDepartment());
         user.setStudentNo(request.getStudentNo());
-        user.setUserStatus("active");
+        user.setUserStatus("inactive");  // Changed from "active" to "inactive" - requires admin approval
         user.setAuthType("local");
 
         return userRepository.save(user);
