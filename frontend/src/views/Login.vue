@@ -59,7 +59,9 @@ const handleLogin = async () => {
       try {
         const response = await authStore.login(loginForm.value)
         if (response.success) {
-          ElMessage.success('登录成功')
+          // Show role information in success message
+          const roleText = authStore.userRolesText
+          ElMessage.success(`登录成功！您的身份：${roleText}`)
           router.push('/competitions')
         } else {
           ElMessage.error(response.message || '登录失败')

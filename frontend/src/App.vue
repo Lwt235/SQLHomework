@@ -25,13 +25,22 @@ const handleLogout = () => {
           class="nav-menu"
         >
           <el-menu-item index="/competitions">竞赛列表</el-menu-item>
+          <el-menu-item v-if="authStore.isAuthenticated" index="/profile">个人中心</el-menu-item>
+          <el-menu-item v-if="authStore.isAuthenticated && (authStore.isStudent || (!authStore.isAdmin && !authStore.isTeacher))" index="/apply-competition">报名参赛</el-menu-item>
           <el-menu-item v-if="authStore.isAuthenticated" index="/my-registrations">我的报名</el-menu-item>
           <el-menu-item v-if="authStore.isAuthenticated" index="/my-submissions">我的作品</el-menu-item>
+          <el-menu-item v-if="authStore.isTeacher" index="/teacher-review">评审中心</el-menu-item>
           <el-menu-item v-if="authStore.isAdmin" index="/admin/users">管理后台</el-menu-item>
         </el-menu>
         <div class="user-section">
           <template v-if="authStore.isAuthenticated">
-            <span class="username">{{ authStore.user?.username }}</span>
+            <div class="user-info">
+              <span class="username">{{ authStore.user?.username }}</span>
+              <el-tag v-if="authStore.isAdmin" type="danger" size="small">管理员</el-tag>
+              <el-tag v-else-if="authStore.isTeacher" type="warning" size="small">教师</el-tag>
+              <el-tag v-else-if="authStore.isStudent" type="success" size="small">学生</el-tag>
+              <el-tag v-else type="info" size="small">{{ authStore.userRolesText }}</el-tag>
+            </div>
             <el-button @click="handleLogout" type="danger" plain>退出登录</el-button>
           </template>
           <template v-else>
@@ -88,9 +97,16 @@ const handleLogout = () => {
   gap: 10px;
 }
 
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .username {
-  margin-right: 10px;
+  margin-right: 4px;
   color: #666;
+  font-weight: 500;
 }
 
 .app-main {

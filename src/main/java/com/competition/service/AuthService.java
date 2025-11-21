@@ -4,7 +4,11 @@ import com.competition.dto.JwtResponse;
 import com.competition.dto.LoginRequest;
 import com.competition.dto.RegisterRequest;
 import com.competition.entity.User;
+import com.competition.entity.UserRole;
+import com.competition.entity.Role;
 import com.competition.repository.UserRepository;
+import com.competition.repository.UserRoleRepository;
+import com.competition.repository.RoleRepository;
 import com.competition.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,6 +16,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
@@ -28,6 +35,12 @@ public class AuthService {
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
     public JwtResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
@@ -38,7 +51,19 @@ public class AuthService {
 
         String token = tokenProvider.generateToken(user.getUsername(), user.getUserId());
 
-        return new JwtResponse(token, user.getUserId(), user.getUsername());
+        // Get user roles - optimized to avoid N+1 queries
+        List<UserRole> userRoles = userRoleRepository.findByUserId(user.getUserId());
+        List<Integer> roleIds = userRoles.stream()
+                .map(UserRole::getRoleId)
+                .collect(Collectors.toList());
+        
+        List<String> roleCodes = roleIds.isEmpty() ? 
+                java.util.Collections.emptyList() :
+                roleRepository.findAllById(roleIds).stream()
+                        .map(Role::getRoleCode)
+                        .collect(Collectors.toList());
+
+        return new JwtResponse(token, user.getUserId(), user.getUsername(), roleCodes);
     }
 
     public User register(RegisterRequest request) {

@@ -9,12 +9,36 @@ export const useAuthStore = defineStore('auth', {
   
   getters: {
     isAuthenticated: (state) => !!state.token,
-    // TODO: Implement proper role-based authorization from backend
-    // Currently using simplified username check - should be replaced with proper role checking
+    
+    // Check if user has admin role
     isAdmin: (state) => {
-      // This would need to be determined based on user roles from backend
-      // For now, simplified check
-      return state.user?.username === 'admin'
+      return state.user?.roles?.includes('admin') || state.user?.roles?.includes('ADMIN')
+    },
+    
+    // Check if user has teacher role
+    isTeacher: (state) => {
+      return state.user?.roles?.includes('teacher') || state.user?.roles?.includes('TEACHER')
+    },
+    
+    // Check if user has student role
+    isStudent: (state) => {
+      return state.user?.roles?.includes('student') || state.user?.roles?.includes('STUDENT')
+    },
+    
+    // Get all user roles as display text
+    userRolesText: (state) => {
+      if (!state.user?.roles || state.user.roles.length === 0) {
+        return '普通用户'
+      }
+      const roleMap = {
+        'admin': '管理员',
+        'ADMIN': '管理员',
+        'teacher': '教师',
+        'TEACHER': '教师',
+        'student': '学生',
+        'STUDENT': '学生'
+      }
+      return state.user.roles.map(role => roleMap[role] || role).join(', ')
     }
   },
   
@@ -26,7 +50,8 @@ export const useAuthStore = defineStore('auth', {
           this.token = response.data.token
           this.user = {
             userId: response.data.userId,
-            username: response.data.username
+            username: response.data.username,
+            roles: response.data.roles || []
           }
           localStorage.setItem('token', this.token)
           localStorage.setItem('user', JSON.stringify(this.user))
