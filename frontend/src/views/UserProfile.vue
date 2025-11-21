@@ -55,19 +55,20 @@
       </el-descriptions>
 
       <div class="account-actions" v-if="!authStore.isAdmin">
-        <el-divider />
-        <el-alert 
+        <!-- <el-divider /> -->
+        <!-- <el-alert
           title="账号注销"
           type="warning"
           description="注销账号后将无法恢复，请谨慎操作！"
           :closable="false"
           style="margin-bottom: 15px"
-        />
+        /> -->
         <el-popconfirm
           title="确定要注销账号吗？此操作不可恢复！"
           confirm-button-text="确定注销"
           cancel-button-text="取消"
           @confirm="deactivateAccount"
+          :popper-style="{ with: 'auto'}"
         >
           <template #reference>
             <el-button type="danger" plain>注销账号</el-button>
