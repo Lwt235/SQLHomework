@@ -215,13 +215,18 @@ const goToConfirm = async () => {
 const submitRegistration = async () => {
   submitting.value = true
   try {
-    // TODO: Backend Registration entity needs teamName field to support team registrations
-    // For now, we only submit basic registration info
-    const response = await registrationAPI.createRegistration({
+    const registrationData = {
       competitionId: selectedCompetition.value.competitionId,
       userId: authStore.user.userId,
       remark: registrationForm.value.remark
-    })
+    }
+    
+    // Add teamName if it's team registration
+    if (registrationForm.value.participationType === 'team') {
+      registrationData.teamName = registrationForm.value.teamName
+    }
+    
+    const response = await registrationAPI.createRegistration(registrationData)
     
     if (response.success) {
       ElMessage.success('报名成功！等待管理员审核')

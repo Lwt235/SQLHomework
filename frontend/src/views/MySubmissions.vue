@@ -77,6 +77,27 @@
         <el-button type="primary" @click="createSubmission">创建</el-button>
       </template>
     </el-dialog>
+
+    <!-- Edit Submission Dialog -->
+    <el-dialog v-model="showEditDialog" title="编辑作品" width="600px">
+      <el-form :model="editSubmissionForm" label-width="100px">
+        <el-form-item label="作品标题">
+          <el-input v-model="editSubmissionForm.submissionTitle" placeholder="请输入作品标题" />
+        </el-form-item>
+        <el-form-item label="作品摘要">
+          <el-input 
+            v-model="editSubmissionForm.abstractText" 
+            type="textarea" 
+            :rows="4" 
+            placeholder="请输入作品摘要"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showEditDialog = false">取消</el-button>
+        <el-button type="primary" @click="updateSubmission">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -91,8 +112,14 @@ const submissions = ref([])
 const approvedRegistrations = ref([])
 const loading = ref(false)
 const showCreateDialog = ref(false)
+const showEditDialog = ref(false)
+const editingSubmission = ref(null)
 const newSubmission = ref({
   registrationId: null,
+  submissionTitle: '',
+  abstractText: ''
+})
+const editSubmissionForm = ref({
   submissionTitle: '',
   abstractText: ''
 })
@@ -139,8 +166,29 @@ const createSubmission = async () => {
 }
 
 const editSubmission = (submission) => {
-  // TODO: Implement edit functionality
-  ElMessage.info('编辑功能开发中')
+  editingSubmission.value = submission
+  editSubmissionForm.value = {
+    submissionTitle: submission.submissionTitle,
+    abstractText: submission.abstractText
+  }
+  showEditDialog.value = true
+}
+
+const updateSubmission = async () => {
+  try {
+    const response = await submissionAPI.updateSubmission(
+      editingSubmission.value.submissionId, 
+      editSubmissionForm.value
+    )
+    if (response.success) {
+      ElMessage.success('作品更新成功')
+      showEditDialog.value = false
+      loadSubmissions()
+      editingSubmission.value = null
+    }
+  } catch (error) {
+    ElMessage.error('更新作品失败')
+  }
 }
 
 const submitWork = async (id) => {

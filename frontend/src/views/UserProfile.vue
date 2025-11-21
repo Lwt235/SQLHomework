@@ -239,4 +239,8 @@ onMounted(() => {
   padding: 20px;
   text-align: center;
 }
+
+.account-actions :deep(.el-alert__description) {
+  text-align: center;
+}
 </style>

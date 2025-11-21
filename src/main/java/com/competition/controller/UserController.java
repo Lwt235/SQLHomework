@@ -7,6 +7,7 @@ import com.competition.service.UserService;
 import com.competition.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,8 +16,7 @@ import java.util.Map;
 
 /**
  * User management controller for admin operations
- * TODO: Add proper role-based security with @PreAuthorize("hasRole('ADMIN')") once role system is implemented
- * Current implementation requires authentication but not specific roles
+ * All operations require ADMIN role for security
  */
 @RestController
 @RequestMapping("/api/users")
@@ -30,9 +30,10 @@ public class UserController {
     private JwtTokenProvider jwtTokenProvider;
 
     /**
-     * Get all users (Admin only - TODO: Add @PreAuthorize("hasRole('ADMIN')"))
+     * Get all users (Admin only)
      */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
         try {
             List<User> users = userService.getAllUsers();
@@ -43,6 +44,7 @@ public class UserController {
     }
 
     @GetMapping("/inactive")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<User>>> getInactiveUsers() {
         try {
             List<User> users = userService.getInactiveUsers();
@@ -63,6 +65,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<User>> activateUser(@PathVariable Integer id) {
         try {
             User user = userService.activateUser(id);
@@ -73,6 +76,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}/suspend")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<User>> suspendUser(@PathVariable Integer id) {
         try {
             User user = userService.suspendUser(id);
@@ -83,6 +87,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<User>> updateUserStatus(
             @PathVariable Integer id,
             @RequestParam String status) {
@@ -95,6 +100,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Integer id, HttpServletRequest request) {
         try {
             // Get current user ID from JWT token
@@ -136,6 +142,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}/roles")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> assignRoles(
             @PathVariable Integer id, 
             @RequestBody Map<String, List<Integer>> payload) {
