@@ -159,3 +159,33 @@ export const awardAPI = {
     return api.get(`/awards/results/award/${awardId}`)
   }
 }
+
+export const teamAPI = {
+  getAllTeams() {
+    return api.get('/teams')
+  },
+  getTeamById(id) {
+    return api.get(`/teams/${id}`)
+  },
+  getTeamMembers(id) {
+    return api.get(`/teams/${id}/members`)
+  },
+  getTeamsByUser(userId) {
+    return api.get(`/teams/user/${userId}`)
+  },
+  createTeam(data) {
+    return api.post('/teams', data)
+  },
+  updateTeam(id, data) {
+    return api.put(`/teams/${id}`, data)
+  },
+  deleteTeam(id) {
+    return api.delete(`/teams/${id}`)
+  },
+  addTeamMember(teamId, data) {
+    return api.post(`/teams/${teamId}/members`, data)
+  },
+  removeTeamMember(teamId, userId) {
+    return api.delete(`/teams/${teamId}/members/${userId}`)
+  }
+}

@@ -27,6 +27,7 @@ const handleLogout = () => {
           <el-menu-item index="/competitions">竞赛列表</el-menu-item>
           <el-menu-item v-if="authStore.isAuthenticated" index="/profile">个人中心</el-menu-item>
           <el-menu-item v-if="authStore.isAuthenticated && (authStore.isStudent || (!authStore.isAdmin && !authStore.isTeacher))" index="/apply-competition">报名参赛</el-menu-item>
+          <el-menu-item v-if="authStore.isAuthenticated && (authStore.isStudent || (!authStore.isAdmin && !authStore.isTeacher))" index="/teams">团队管理</el-menu-item>
           <el-menu-item v-if="authStore.isAuthenticated" index="/my-registrations">我的报名</el-menu-item>
           <el-menu-item v-if="authStore.isAuthenticated" index="/my-submissions">我的作品</el-menu-item>
           <el-menu-item v-if="authStore.isTeacher" index="/teacher-review">评审中心</el-menu-item>
