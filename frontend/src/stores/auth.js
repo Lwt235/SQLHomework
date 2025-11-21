@@ -9,8 +9,10 @@ export const useAuthStore = defineStore('auth', {
   
   getters: {
     isAuthenticated: (state) => !!state.token,
+    // TODO: Implement proper role-based authorization from backend
+    // Currently using simplified username check - should be replaced with proper role checking
     isAdmin: (state) => {
-      // This would need to be determined based on user roles
+      // This would need to be determined based on user roles from backend
       // For now, simplified check
       return state.user?.username === 'admin'
     }

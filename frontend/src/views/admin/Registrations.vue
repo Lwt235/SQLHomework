@@ -51,9 +51,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useAuthStore } from '../../stores/auth'
 import { registrationAPI } from '../../api'
 import { ElMessage } from 'element-plus'
 
+const authStore = useAuthStore()
 const registrations = ref([])
 const loading = ref(false)
 
@@ -73,7 +75,7 @@ const loadRegistrations = async () => {
 
 const approveRegistration = async (id) => {
   try {
-    const response = await registrationAPI.updateRegistrationStatus(id, 'approved', 1)
+    const response = await registrationAPI.updateRegistrationStatus(id, 'approved', authStore.user?.userId || 1)
     if (response.success) {
       ElMessage.success('报名已通过')
       loadRegistrations()
@@ -85,7 +87,7 @@ const approveRegistration = async (id) => {
 
 const rejectRegistration = async (id) => {
   try {
-    const response = await registrationAPI.updateRegistrationStatus(id, 'rejected', 1)
+    const response = await registrationAPI.updateRegistrationStatus(id, 'rejected', authStore.user?.userId || 1)
     if (response.success) {
       ElMessage.success('报名已拒绝')
       loadRegistrations()

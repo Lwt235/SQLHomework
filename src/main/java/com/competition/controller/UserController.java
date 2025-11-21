@@ -5,11 +5,15 @@ import com.competition.entity.User;
 import com.competition.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * User management controller for admin operations
+ * TODO: Add proper role-based security with @PreAuthorize("hasRole('ADMIN')") once role system is implemented
+ * Current implementation requires authentication but not specific roles
+ */
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*")
@@ -18,6 +22,9 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    /**
+     * Get all users (Admin only - TODO: Add @PreAuthorize("hasRole('ADMIN')"))
+     */
     @GetMapping
     public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
         try {
