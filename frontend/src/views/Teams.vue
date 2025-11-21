@@ -259,6 +259,7 @@ const teamMembers = ref({}) // Map of teamId -> members array
 const currentTeamMembers = ref([])
 const searchResults = ref([])
 const transferTarget = ref(null)
+const searchDebounceTimer = ref(null)
 
 const teamForm = ref({
   teamName: '',
@@ -425,10 +426,17 @@ const showAddMemberDialog = () => {
 }
 
 const handleUserSearch = () => {
-  // Debounce or direct search
-  if (memberForm.value.userQuery && memberForm.value.userQuery.length >= 2) {
-    searchUsers()
+  // Clear previous timer
+  if (searchDebounceTimer.value) {
+    clearTimeout(searchDebounceTimer.value)
   }
+  
+  // Set new timer for debounced search
+  searchDebounceTimer.value = setTimeout(() => {
+    if (memberForm.value.userQuery && memberForm.value.userQuery.length >= 2) {
+      searchUsers()
+    }
+  }, 500) // 500ms debounce
 }
 
 const searchUsers = async () => {

@@ -163,14 +163,24 @@ public class TeamService {
         List<TeamMember> members = teamMemberRepository.findByTeamId(teamId);
         List<com.competition.dto.TeamMemberDetailDTO> result = new java.util.ArrayList<>();
         
+        // Get all user IDs to fetch in one query
+        List<Integer> userIds = members.stream()
+                .map(TeamMember::getUserId)
+                .collect(Collectors.toList());
+        
+        // Fetch all users at once to avoid N+1 queries
+        List<User> users = userRepository.findAllById(userIds);
+        java.util.Map<Integer, User> userMap = users.stream()
+                .collect(Collectors.toMap(User::getUserId, u -> u));
+        
         for (TeamMember member : members) {
             com.competition.dto.TeamMemberDetailDTO dto = new com.competition.dto.TeamMemberDetailDTO();
             dto.setUserId(member.getUserId());
             dto.setTeamId(member.getTeamId());
             dto.setRoleInTeam(member.getRoleInTeam());
             
-            // Get user details
-            User user = userRepository.findById(member.getUserId()).orElse(null);
+            // Get user details from map
+            User user = userMap.get(member.getUserId());
             if (user != null) {
                 dto.setUsername(user.getUsername());
                 dto.setNickname(user.getNickname());
@@ -224,20 +234,7 @@ public class TeamService {
             return java.util.Collections.emptyList();
         }
         
-        String lowerQuery = query.toLowerCase();
-        return userRepository.findAll().stream()
-                .filter(user -> !user.getDeleted())
-                .filter(user -> UserService.STATUS_ACTIVE.equals(user.getUserStatus()))
-                .filter(user -> {
-                    if (user.getNickname() != null && user.getNickname().toLowerCase().contains(lowerQuery)) {
-                        return true;
-                    }
-                    if (user.getUsername() != null && user.getUsername().toLowerCase().contains(lowerQuery)) {
-                        return true;
-                    }
-                    return false;
-                })
-                .collect(Collectors.toList());
+        return userRepository.searchByNicknameOrUsername(query.trim());
     }
     
     public List<Team> getTeamsByUserIdAndRole(Integer userId, String role) {
