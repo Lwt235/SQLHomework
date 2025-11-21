@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,6 +48,46 @@ public class UserService {
     public User getUserById(Integer userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User updateUserProfile(Integer userId, Map<String, Object> updates) {
+        User user = getUserById(userId);
+        
+        // Update allowed fields (username is not editable as it's the login credential)
+        if (updates.containsKey("realName")) {
+            String realName = (String) updates.get("realName");
+            user.setRealName(realName);
+        }
+        if (updates.containsKey("email")) {
+            String email = (String) updates.get("email");
+            if (email != null && !email.isEmpty()) {
+                // Check if email is already used by another user
+                userRepository.findByEmail(email).ifPresent(existingUser -> {
+                    if (!existingUser.getUserId().equals(userId)) {
+                        throw new RuntimeException("邮箱已被其他用户使用");
+                    }
+                });
+            }
+            user.setEmail(email);
+        }
+        if (updates.containsKey("phone")) {
+            String phone = (String) updates.get("phone");
+            user.setPhone(phone);
+        }
+        if (updates.containsKey("school")) {
+            String school = (String) updates.get("school");
+            user.setSchool(school);
+        }
+        if (updates.containsKey("department")) {
+            String department = (String) updates.get("department");
+            user.setDepartment(department);
+        }
+        if (updates.containsKey("studentNo")) {
+            String studentNo = (String) updates.get("studentNo");
+            user.setStudentNo(studentNo);
+        }
+        
+        return userRepository.save(user);
     }
 
     public User updateUserStatus(Integer userId, String status) {
