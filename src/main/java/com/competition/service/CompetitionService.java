@@ -53,7 +53,7 @@ public class CompetitionService {
     public void deleteCompetition(Integer id) {
         Competition competition = competitionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Competition not found"));
-        competition.setIsDeleted(true);
+        competition.setDeleted(true);
         competitionRepository.save(competition);
     }
 

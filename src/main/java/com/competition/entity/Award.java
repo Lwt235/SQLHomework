@@ -33,7 +33,7 @@ public class Award {
     private LocalDateTime updatedAt;
     
     @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
+    private Boolean deleted = false;
     
     @PrePersist
     protected void onCreate() {
