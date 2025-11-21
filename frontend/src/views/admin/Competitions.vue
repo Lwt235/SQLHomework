@@ -124,7 +124,8 @@ const loading = ref(false)
 const saving = ref(false)
 const showCreateDialog = ref(false)
 const competitionFormRef = ref(null)
-const competitionForm = ref({
+
+const getInitialCompetitionForm = () => ({
   competitionTitle: '',
   shortTitle: '',
   description: '',
@@ -138,6 +139,8 @@ const competitionForm = ref({
   submitEnd: null,
   maxTeamSize: 5
 })
+
+const competitionForm = ref(getInitialCompetitionForm())
 
 const competitionRules = {
   competitionTitle: [
@@ -193,20 +196,7 @@ const saveCompetition = async () => {
           showCreateDialog.value = false
           loadCompetitions()
           // Reset form
-          competitionForm.value = {
-            competitionTitle: '',
-            shortTitle: '',
-            description: '',
-            category: '',
-            level: 'school',
-            organizer: '',
-            competitionStatus: 'draft',
-            signupStart: null,
-            signupEnd: null,
-            submitStart: null,
-            submitEnd: null,
-            maxTeamSize: 5
-          }
+          competitionForm.value = getInitialCompetitionForm()
         } else {
           ElMessage.error(response.message || '保存竞赛失败')
         }

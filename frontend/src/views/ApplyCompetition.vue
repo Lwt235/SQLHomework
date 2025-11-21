@@ -164,9 +164,11 @@ const loadAvailableCompetitions = async () => {
       // Filter competitions that are in signup period
       const now = new Date()
       availableCompetitions.value = response.data.filter(comp => {
+        if (!comp.signupStart || !comp.signupEnd) return false
         const signupStart = new Date(comp.signupStart)
         const signupEnd = new Date(comp.signupEnd)
-        return now >= signupStart && now <= signupEnd && 
+        return !isNaN(signupStart.getTime()) && !isNaN(signupEnd.getTime()) &&
+               now >= signupStart && now <= signupEnd && 
                (comp.competitionStatus === 'published' || comp.competitionStatus === 'ongoing')
       })
     }
@@ -213,6 +215,8 @@ const goToConfirm = async () => {
 const submitRegistration = async () => {
   submitting.value = true
   try {
+    // TODO: Backend Registration entity needs teamName field to support team registrations
+    // For now, we only submit basic registration info
     const response = await registrationAPI.createRegistration({
       competitionId: selectedCompetition.value.competitionId,
       userId: authStore.user.userId,

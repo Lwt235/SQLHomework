@@ -51,14 +51,17 @@ public class AuthService {
 
         String token = tokenProvider.generateToken(user.getUsername(), user.getUserId());
 
-        // Get user roles
+        // Get user roles - optimized to avoid N+1 queries
         List<UserRole> userRoles = userRoleRepository.findByUserId(user.getUserId());
-        List<String> roleCodes = userRoles.stream()
-                .map(ur -> roleRepository.findById(ur.getRoleId())
-                        .map(Role::getRoleCode)
-                        .orElse(null))
-                .filter(code -> code != null)
+        List<Integer> roleIds = userRoles.stream()
+                .map(UserRole::getRoleId)
                 .collect(Collectors.toList());
+        
+        List<String> roleCodes = roleIds.isEmpty() ? 
+                java.util.Collections.emptyList() :
+                roleRepository.findAllById(roleIds).stream()
+                        .map(Role::getRoleCode)
+                        .collect(Collectors.toList());
 
         return new JwtResponse(token, user.getUserId(), user.getUsername(), roleCodes);
     }

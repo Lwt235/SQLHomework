@@ -205,8 +205,8 @@ const submitReview = async () => {
           userId: currentAssignment.value.userId,
           submissionId: currentAssignment.value.submissionId,
           score: reviewForm.value.score,
-          comment: reviewForm.value.comment,
-          reviewDate: new Date().toISOString()
+          comment: reviewForm.value.comment
+          // reviewDate will be set by the backend
         })
         
         if (response.success) {
