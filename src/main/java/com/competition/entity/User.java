@@ -15,7 +15,7 @@ public class User {
     private Integer userId;
     
     @Column(name = "user_status", nullable = false, length = 20)
-    private String userStatus = "active";
+    private String userStatus = "inactive";
     
     @Column(name = "username", nullable = false, length = 50, unique = true)
     private String username;

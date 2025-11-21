@@ -1,10 +1,22 @@
 # 部署指南
 
+## 系统架构
+- **后端**: Spring Boot 3.2 + MySQL 8.0
+- **前端**: Vue 3 + Vite + Element Plus  
+- **认证**: JWT Token
+- **用户审核**: 管理员激活机制
+
 ## 环境要求
+
+### 后端要求
 - **JDK**: Java 17 或更高版本
 - **Maven**: 3.6 或更高版本
 - **MySQL**: 8.0 或更高版本
 - **操作系统**: Linux, macOS 或 Windows
+
+### 前端要求
+- **Node.js**: 16+ 或更高版本
+- **npm**: 7+ 或 yarn
 
 ## 数据库准备
 
@@ -78,6 +90,84 @@ mvn clean package
 
 构建成功后，会在 `target` 目录下生成 `competition-management-1.0.0.jar`
 
+## 前端部署
+
+### 1. 安装依赖
+```bash
+cd frontend
+npm install
+```
+
+### 2. 开发模式运行
+```bash
+npm run dev
+```
+前端将在 `http://localhost:5173` 启动，并自动代理 API 请求到后端。
+
+### 3. 生产模式构建
+```bash
+npm run build
+```
+构建产物将输出到 `frontend/dist` 目录。
+
+### 4. 部署静态文件
+生产环境可以使用 Nginx 或其他静态文件服务器托管构建产物：
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    # 前端静态文件
+    location / {
+        root /path/to/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+    
+    # API 代理到后端
+    location /api {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+### 5. 使用 Docker 部署前端（可选）
+创建 `frontend/Dockerfile`:
+```dockerfile
+FROM node:16-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+```
+
+## 初始化系统
+
+### 创建管理员账号
+系统首次部署后，需要创建管理员账号：
+
+#### 方法1: 注册后手动激活
+1. 在前端注册一个账号（例如：用户名 `admin`）
+2. 在数据库中手动将该用户状态设为激活：
+```sql
+UPDATE User SET user_status = 'active' WHERE username = 'admin';
+```
+
+#### 方法2: 直接插入管理员账号
+```sql
+-- 密码是 'admin123' 的 BCrypt 加密
+INSERT INTO User (username, password_hash, real_name, email, user_status, auth_type, created_at, updated_at, is_deleted) 
+VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '系统管理员', 'admin@example.com', 'active', 'local', NOW(), NOW(), 0);
+```
+
 ## 运行应用
 
 ### 开发模式
@@ -123,29 +213,54 @@ netstat -tlnp | grep 8080
 lsof -i :8080
 ```
 
-### 2. 测试API
+### 2. 测试API和前端
 ```bash
-# 测试健康检查
+# 测试后端API
 curl http://localhost:8080/api/competitions/list
 
-# 测试注册
+# 访问前端
+# 浏览器打开 http://localhost:5173
+
+# 测试注册功能
 curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "test001",
     "password": "password123",
     "realName": "测试用户",
-    "email": "test@example.com"
+    "email": "test@example.com",
+    "phone": "13800138000",
+    "school": "测试大学"
   }'
 
-# 测试登录
+# 测试登录（需要先激活用户）
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "test001",
-    "password": "password123"
+    "username": "admin",
+    "password": "admin123"
   }'
 ```
+
+## 用户注册与审核流程
+
+### 学生注册流程
+1. 访问前端注册页面 `http://localhost:5173/register`
+2. 填写完整的注册信息
+3. 提交后系统提示："注册成功，请等待管理员审核激活账号"
+4. 此时账号状态为 `inactive`，**无法登录**
+
+### 管理员审核流程  
+1. 管理员登录系统（用户名：admin）
+2. 进入"管理后台 > 用户管理"
+3. 点击"待审核用户"查看所有未激活用户
+4. 审核用户信息后，点击"激活"按钮
+5. 用户状态变为 `active`，用户可以登录
+
+### 用户状态说明
+- **inactive (未激活)**: 新注册用户的默认状态，无法登录
+- **active (激活)**: 管理员审核通过后的状态，可以正常登录使用
+- **suspended (暂停)**: 管理员可以暂停已激活的用户
 
 ## Docker 部署（可选）
 
