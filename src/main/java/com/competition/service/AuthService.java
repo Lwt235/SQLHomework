@@ -43,12 +43,29 @@ public class AuthService {
     private RoleRepository roleRepository;
 
     public JwtResponse login(LoginRequest request) {
+        // First check if user exists and get their status
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("用户名或密码错误"));
+        
+        // Check if user is deleted
+        if (user.getDeleted()) {
+            throw new RuntimeException("该账号已被删除");
+        }
+        
+        // Check if user is inactive (awaiting admin approval)
+        if ("inactive".equals(user.getUserStatus())) {
+            throw new RuntimeException("您的账号正在等待管理员审核，请稍后再试");
+        }
+        
+        // Check if user is suspended
+        if ("suspended".equals(user.getUserStatus())) {
+            throw new RuntimeException("您的账号已被暂停，请联系管理员");
+        }
+        
+        // Authenticate the user
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
-
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = tokenProvider.generateToken(user.getUsername(), user.getUserId());
 
