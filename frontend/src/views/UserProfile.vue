@@ -53,6 +53,27 @@
           <el-text>{{ formatDate(userDetails.createdAt) }}</el-text>
         </el-descriptions-item>
       </el-descriptions>
+
+      <div class="account-actions" v-if="!authStore.isAdmin">
+        <el-divider />
+        <el-alert 
+          title="账号注销"
+          type="warning"
+          description="注销账号后将无法恢复，请谨慎操作！"
+          :closable="false"
+          style="margin-bottom: 15px"
+        />
+        <el-popconfirm
+          title="确定要注销账号吗？此操作不可恢复！"
+          confirm-button-text="确定注销"
+          cancel-button-text="取消"
+          @confirm="deactivateAccount"
+        >
+          <template #reference>
+            <el-button type="danger" plain>注销账号</el-button>
+          </template>
+        </el-popconfirm>
+      </div>
     </el-card>
 
     <el-card class="permissions-card" v-if="authStore.isAuthenticated">
@@ -110,10 +131,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { userAPI } from '../api'
-import { ElMessage } from 'element-plus'
+import { userAPI, authAPI } from '../api'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const userDetails = ref(null)
 
@@ -125,6 +148,20 @@ const loadUserDetails = async () => {
     }
   } catch (error) {
     ElMessage.error('加载用户详情失败')
+  }
+}
+
+const deactivateAccount = async () => {
+  try {
+    const response = await authAPI.deactivateAccount()
+    if (response.success) {
+      ElMessage.success('账号注销成功')
+      // Logout and redirect to login page
+      authStore.logout()
+      router.push('/login')
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '账号注销失败')
   }
 }
 
@@ -195,5 +232,11 @@ onMounted(() => {
   left: 8px;
   color: #67c23a;
   font-weight: bold;
+}
+
+.account-actions {
+  margin-top: 20px;
+  padding: 20px;
+  text-align: center;
 }
 </style>

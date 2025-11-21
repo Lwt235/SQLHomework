@@ -6,6 +6,9 @@ export const authAPI = {
   },
   register(data) {
     return api.post('/auth/register', data)
+  },
+  deactivateAccount() {
+    return api.post('/auth/deactivate')
   }
 }
 
@@ -30,6 +33,15 @@ export const userAPI = {
   },
   deleteUser(id) {
     return api.delete(`/users/${id}`)
+  },
+  getAllRoles() {
+    return api.get('/users/roles')
+  },
+  getUserRoles(id) {
+    return api.get(`/users/${id}/roles`)
+  },
+  assignRoles(id, roleIds) {
+    return api.put(`/users/${id}/roles`, { roleIds })
   }
 }
 

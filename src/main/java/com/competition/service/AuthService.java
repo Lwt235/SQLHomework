@@ -16,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -88,5 +89,32 @@ public class AuthService {
         user.setAuthType("local");
 
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public void deactivateAccount(Integer userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Check if user has admin role
+        List<UserRole> userRoles = userRoleRepository.findByUserId(userId);
+        List<Integer> roleIds = userRoles.stream()
+                .map(UserRole::getRoleId)
+                .collect(Collectors.toList());
+        
+        if (!roleIds.isEmpty()) {
+            List<Role> roles = roleRepository.findAllById(roleIds);
+            boolean isAdmin = roles.stream()
+                    .anyMatch(role -> "admin".equalsIgnoreCase(role.getRoleCode()) || 
+                                     "ADMIN".equalsIgnoreCase(role.getRoleCode()));
+            
+            if (isAdmin) {
+                throw new RuntimeException("管理员账号不允许注销");
+            }
+        }
+        
+        // Soft delete the account
+        user.setIsDeleted(true);
+        userRepository.save(user);
     }
 }

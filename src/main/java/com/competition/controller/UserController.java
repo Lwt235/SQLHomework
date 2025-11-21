@@ -2,12 +2,16 @@ package com.competition.controller;
 
 import com.competition.dto.ApiResponse;
 import com.competition.entity.User;
+import com.competition.entity.Role;
 import com.competition.service.UserService;
+import com.competition.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 
 /**
  * User management controller for admin operations
@@ -21,6 +25,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     /**
      * Get all users (Admin only - TODO: Add @PreAuthorize("hasRole('ADMIN')"))
@@ -88,12 +95,56 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Integer id, HttpServletRequest request) {
         try {
+            // Get current user ID from JWT token
+            String token = jwtTokenProvider.resolveToken(request);
+            if (token != null && jwtTokenProvider.validateToken(token)) {
+                Integer currentUserId = jwtTokenProvider.getUserIdFromToken(token);
+                
+                // Prevent self-deletion
+                if (currentUserId.equals(id)) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error("不能删除自己的账号"));
+                }
+            }
+            
             userService.deleteUser(id);
             return ResponseEntity.ok(ApiResponse.success("User deleted successfully", null));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to delete user: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/roles")
+    public ResponseEntity<ApiResponse<List<Role>>> getAllRoles() {
+        try {
+            List<Role> roles = userService.getAllRoles();
+            return ResponseEntity.ok(ApiResponse.success("Roles retrieved successfully", roles));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve roles: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/roles")
+    public ResponseEntity<ApiResponse<List<Role>>> getUserRoles(@PathVariable Integer id) {
+        try {
+            List<Role> roles = userService.getUserRoles(id);
+            return ResponseEntity.ok(ApiResponse.success("User roles retrieved successfully", roles));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve user roles: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/roles")
+    public ResponseEntity<ApiResponse<Void>> assignRoles(
+            @PathVariable Integer id, 
+            @RequestBody Map<String, List<Integer>> payload) {
+        try {
+            List<Integer> roleIds = payload.get("roleIds");
+            userService.assignRoles(id, roleIds);
+            return ResponseEntity.ok(ApiResponse.success("Roles assigned successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to assign roles: " + e.getMessage()));
         }
     }
 }
