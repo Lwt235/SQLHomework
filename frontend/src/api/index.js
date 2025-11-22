@@ -13,8 +13,8 @@ export const authAPI = {
 }
 
 export const userAPI = {
-  getAllUsers() {
-    return api.get('/users')
+  getAllUsers(params) {
+    return api.get('/users', { params })
   },
   getInactiveUsers() {
     return api.get('/users/inactive')

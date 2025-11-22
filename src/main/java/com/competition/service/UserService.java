@@ -38,6 +38,81 @@ public class UserService {
                 .filter(user -> !user.getDeleted())
                 .collect(Collectors.toList());
     }
+    
+    public List<User> getAllUsersFiltered(String username, String school, String roleCode, String sortBy, String sortOrder) {
+        List<User> users = getAllUsers();
+        
+        // Apply filters
+        if (username != null && !username.trim().isEmpty()) {
+            String lowerUsername = username.toLowerCase();
+            users = users.stream()
+                    .filter(u -> u.getUsername() != null && u.getUsername().toLowerCase().contains(lowerUsername))
+                    .collect(Collectors.toList());
+        }
+        
+        if (school != null && !school.trim().isEmpty()) {
+            String lowerSchool = school.toLowerCase();
+            users = users.stream()
+                    .filter(u -> u.getSchool() != null && u.getSchool().toLowerCase().contains(lowerSchool))
+                    .collect(Collectors.toList());
+        }
+        
+        if (roleCode != null && !roleCode.trim().isEmpty()) {
+            // Filter by role
+            Role role = roleRepository.findAll().stream()
+                    .filter(r -> roleCode.equalsIgnoreCase(r.getRoleCode()))
+                    .findFirst()
+                    .orElse(null);
+            
+            if (role != null) {
+                List<UserRole> userRolesForRole = userRoleRepository.findByRoleId(role.getRoleId());
+                List<Integer> userIdsWithRole = userRolesForRole.stream()
+                        .map(UserRole::getUserId)
+                        .collect(Collectors.toList());
+                
+                users = users.stream()
+                        .filter(u -> userIdsWithRole.contains(u.getUserId()))
+                        .collect(Collectors.toList());
+            }
+        }
+        
+        // Apply sorting
+        if (sortBy != null && !sortBy.trim().isEmpty()) {
+            boolean ascending = !"desc".equalsIgnoreCase(sortOrder);
+            
+            switch (sortBy.toLowerCase()) {
+                case "username":
+                    users.sort((u1, u2) -> {
+                        String name1 = u1.getUsername() != null ? u1.getUsername() : "";
+                        String name2 = u2.getUsername() != null ? u2.getUsername() : "";
+                        return ascending ? name1.compareTo(name2) : name2.compareTo(name1);
+                    });
+                    break;
+                case "school":
+                    users.sort((u1, u2) -> {
+                        String school1 = u1.getSchool() != null ? u1.getSchool() : "";
+                        String school2 = u2.getSchool() != null ? u2.getSchool() : "";
+                        return ascending ? school1.compareTo(school2) : school2.compareTo(school1);
+                    });
+                    break;
+                case "createdat":
+                    users.sort((u1, u2) -> {
+                        int result = u1.getCreatedAt().compareTo(u2.getCreatedAt());
+                        return ascending ? result : -result;
+                    });
+                    break;
+                case "userstatus":
+                    users.sort((u1, u2) -> {
+                        String status1 = u1.getUserStatus() != null ? u1.getUserStatus() : "";
+                        String status2 = u2.getUserStatus() != null ? u2.getUserStatus() : "";
+                        return ascending ? status1.compareTo(status2) : status2.compareTo(status1);
+                    });
+                    break;
+            }
+        }
+        
+        return users;
+    }
 
     public List<User> getInactiveUsers() {
         return userRepository.findAll().stream()

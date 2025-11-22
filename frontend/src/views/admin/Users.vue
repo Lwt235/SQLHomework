@@ -13,6 +13,62 @@
         </div>
       </template>
 
+      <!-- Filter Controls -->
+      <div class="filter-section">
+        <el-form :inline="true" :model="filters">
+          <el-form-item label="用户名">
+            <el-input 
+              v-model="filters.username" 
+              placeholder="搜索用户名" 
+              clearable
+              @clear="applyFilters"
+            />
+          </el-form-item>
+          <el-form-item label="学校">
+            <el-input 
+              v-model="filters.school" 
+              placeholder="搜索学校" 
+              clearable
+              @clear="applyFilters"
+            />
+          </el-form-item>
+          <el-form-item label="权限">
+            <el-select 
+              v-model="filters.roleCode" 
+              placeholder="选择权限" 
+              clearable
+              @clear="applyFilters"
+            >
+              <el-option label="全部" value="" />
+              <el-option 
+                v-for="role in availableRoles" 
+                :key="role.roleCode" 
+                :label="role.roleName" 
+                :value="role.roleCode"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="排序">
+            <el-select v-model="filters.sortBy" placeholder="排序字段" clearable>
+              <el-option label="用户名" value="username" />
+              <el-option label="学校" value="school" />
+              <el-option label="状态" value="userStatus" />
+              <el-option label="创建时间" value="createdAt" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="顺序">
+            <el-select v-model="filters.sortOrder" placeholder="排序顺序">
+              <el-option label="升序" value="asc" />
+              <el-option label="降序" value="desc" />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="applyFilters">搜索</el-button>
+            <el-button @click="resetFilters">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+
       <el-table :data="users" v-loading="loading" style="width: 100%">
         <el-table-column prop="userId" label="ID" width="80" />
         <el-table-column prop="username" label="用户名" width="120" />
@@ -123,10 +179,30 @@ const selectedUser = ref(null)
 const selectedRoles = ref([])
 const availableRoles = ref([])
 
-const loadAllUsers = async () => {
+// Filter state
+const filters = ref({
+  username: '',
+  school: '',
+  roleCode: '',
+  sortBy: '',
+  sortOrder: 'asc'
+})
+
+const loadAllUsers = async (applyFilter = false) => {
   loading.value = true
   try {
-    const response = await userAPI.getAllUsers()
+    let params = {}
+    if (applyFilter) {
+      if (filters.value.username) params.username = filters.value.username
+      if (filters.value.school) params.school = filters.value.school
+      if (filters.value.roleCode) params.roleCode = filters.value.roleCode
+      if (filters.value.sortBy) {
+        params.sortBy = filters.value.sortBy
+        params.sortOrder = filters.value.sortOrder
+      }
+    }
+    
+    const response = await userAPI.getAllUsers(params)
     if (response.success) {
       users.value = response.data
       inactiveCount.value = users.value.filter(u => u.userStatus === 'inactive').length
@@ -227,6 +303,21 @@ const deleteUser = async (userId) => {
   }
 }
 
+const applyFilters = () => {
+  loadAllUsers(true)
+}
+
+const resetFilters = () => {
+  filters.value = {
+    username: '',
+    school: '',
+    roleCode: '',
+    sortBy: '',
+    sortOrder: 'asc'
+  }
+  loadAllUsers(false)
+}
+
 onMounted(() => {
   loadAllUsers()
   loadRoles()
@@ -242,5 +333,13 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.filter-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
 }
 </style>
