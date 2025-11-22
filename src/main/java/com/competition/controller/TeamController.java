@@ -177,6 +177,33 @@ public class TeamController {
         }
     }
     
+    @PostMapping("/{teamId}/update-member-role")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<Void>> updateMemberRole(
+            @PathVariable Integer teamId,
+            @RequestBody Map<String, Object> payload,
+            HttpServletRequest request) {
+        try {
+            String token = jwtTokenProvider.resolveToken(request);
+            if (token == null || !jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(401).body(ApiResponse.error("未授权"));
+            }
+            
+            Integer operatorUserId = jwtTokenProvider.getUserIdFromToken(token);
+            Integer targetUserId = (Integer) payload.get("userId");
+            String newRole = (String) payload.get("role");
+            
+            if (targetUserId == null || newRole == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("用户ID和角色不能为空"));
+            }
+            
+            teamService.updateMemberRole(teamId, operatorUserId, targetUserId, newRole);
+            return ResponseEntity.ok(ApiResponse.success("成员角色更新成功", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to update member role: " + e.getMessage()));
+        }
+    }
+    
     @GetMapping("/search-users")
     public ResponseEntity<ApiResponse<List<User>>> searchUsers(@RequestParam String query) {
         try {

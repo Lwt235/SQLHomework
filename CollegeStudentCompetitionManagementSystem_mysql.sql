@@ -14,6 +14,8 @@ drop table if exists File;
 
 drop table if exists JudgeAssignment;
 
+drop table if exists Notification;
+
 drop table if exists Registration;
 
 drop table if exists Role;
@@ -121,10 +123,27 @@ create table JudgeAssignment
    weight               decimal(8,2) not null,
    score                decimal(8,2) not null,
    comment              text,
+   judge_status         varchar(20) not null default 'pending',
    created_at           datetime not null,
    updated_at           datetime not null,
    is_deleted           bool not null default 0,
    primary key (user_id, submission_id)
+);
+
+/*==============================================================*/
+/* Table: Notification                                          */
+/*==============================================================*/
+create table Notification
+(
+   notification_id      int not null,
+   user_id              int not null,
+   notification_type    varchar(50) not null,
+   title                varchar(255) not null,
+   content              text not null,
+   is_read              bool not null default 0,
+   related_id           int,
+   created_at           datetime not null,
+   primary key (notification_id)
 );
 
 /*==============================================================*/
@@ -282,6 +301,9 @@ alter table JudgeAssignment add constraint FK_JudgeAssignment foreign key (user_
 
 alter table JudgeAssignment add constraint FK_JudgeAssignment2 foreign key (submission_id)
       references Submission (submission_id);
+
+alter table Notification add constraint FK_UserNotification foreign key (user_id)
+      references User (user_id);
 
 alter table Registration add constraint FK_AuditRegistration foreign key (audit_user_id)
       references User (user_id);

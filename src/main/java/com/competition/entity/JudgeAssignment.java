@@ -29,6 +29,9 @@ public class JudgeAssignment {
     @Column(name = "comment", columnDefinition = "TEXT")
     private String comment;
     
+    @Column(name = "judge_status", nullable = false, length = 20)
+    private String judgeStatus = "pending";
+    
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     

@@ -238,6 +238,50 @@ public class TeamService {
         teamMemberRepository.save(newCaptain);
     }
     
+    /**
+     * Update team member role (leader can update any member's role)
+     */
+    @Transactional
+    public void updateMemberRole(Integer teamId, Integer operatorUserId, Integer targetUserId, String newRole) {
+        // Validate team exists
+        Team team = getTeamById(teamId);
+        
+        // Check that operator is the captain
+        TeamMember.TeamMemberId operatorId = new TeamMember.TeamMemberId();
+        operatorId.setTeamId(teamId);
+        operatorId.setUserId(operatorUserId);
+        
+        TeamMember operator = teamMemberRepository.findById(operatorId)
+                .orElseThrow(() -> new RuntimeException("您不是团队成员"));
+        
+        if (!"leader".equals(operator.getRoleInTeam())) {
+            throw new RuntimeException("只有队长才能修改成员角色");
+        }
+        
+        // Get target member
+        TeamMember.TeamMemberId targetId = new TeamMember.TeamMemberId();
+        targetId.setTeamId(teamId);
+        targetId.setUserId(targetUserId);
+        
+        TeamMember targetMember = teamMemberRepository.findById(targetId)
+                .orElseThrow(() -> new RuntimeException("目标用户不是团队成员"));
+        
+        // Validate new role
+        if (!newRole.equals("leader") && !newRole.equals("vice-leader") && !newRole.equals("member")) {
+            throw new RuntimeException("无效的角色类型");
+        }
+        
+        // If promoting to leader, demote current leader
+        if ("leader".equals(newRole)) {
+            operator.setRoleInTeam("member");
+            teamMemberRepository.save(operator);
+        }
+        
+        // Update target member role
+        targetMember.setRoleInTeam(newRole);
+        teamMemberRepository.save(targetMember);
+    }
+    
     public List<User> searchUsersByNicknameOrUsername(String query) {
         if (query == null || query.trim().isEmpty()) {
             return java.util.Collections.emptyList();

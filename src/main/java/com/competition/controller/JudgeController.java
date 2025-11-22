@@ -102,4 +102,24 @@ public class JudgeController {
             return ResponseEntity.badRequest().body(ApiResponse.error("随机分配失败: " + e.getMessage()));
         }
     }
+    
+    /**
+     * Confirm review completion
+     */
+    @PostMapping("/assignments/confirm")
+    public ResponseEntity<ApiResponse<JudgeAssignment>> confirmReview(@RequestBody Map<String, Integer> payload) {
+        try {
+            Integer userId = payload.get("userId");
+            Integer submissionId = payload.get("submissionId");
+            
+            if (userId == null || submissionId == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("用户ID和作品ID不能为空"));
+            }
+            
+            JudgeAssignment assignment = judgeService.confirmReview(userId, submissionId);
+            return ResponseEntity.ok(ApiResponse.success("评审已确认完成", assignment));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("确认失败: " + e.getMessage()));
+        }
+    }
 }

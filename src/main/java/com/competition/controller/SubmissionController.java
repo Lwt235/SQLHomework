@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/submissions")
@@ -53,9 +54,15 @@ public class SubmissionController {
     }
 
     @PostMapping("/{id}/submit")
-    public ResponseEntity<ApiResponse<Submission>> submitWork(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<Submission>> submitWork(
+            @PathVariable Integer id,
+            @RequestBody Map<String, Integer> payload) {
         try {
-            Submission submitted = submissionService.submitWork(id);
+            Integer userId = payload.get("userId");
+            if (userId == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("用户ID不能为空"));
+            }
+            Submission submitted = submissionService.submitWork(id, userId);
             return ResponseEntity.ok(ApiResponse.success("Work submitted successfully", submitted));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to submit work: " + e.getMessage()));
@@ -63,9 +70,15 @@ public class SubmissionController {
     }
 
     @PostMapping("/{id}/lock")
-    public ResponseEntity<ApiResponse<Submission>> lockSubmission(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<Submission>> lockSubmission(
+            @PathVariable Integer id,
+            @RequestBody Map<String, Integer> payload) {
         try {
-            Submission locked = submissionService.lockSubmission(id);
+            Integer userId = payload.get("userId");
+            if (userId == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("用户ID不能为空"));
+            }
+            Submission locked = submissionService.lockSubmission(id, userId);
             return ResponseEntity.ok(ApiResponse.success("Submission locked successfully", locked));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to lock submission: " + e.getMessage()));
