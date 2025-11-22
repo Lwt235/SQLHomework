@@ -6,6 +6,14 @@
           <span>消息通知</span>
           <div>
             <el-button 
+              v-if="selectedNotifications.length > 0"
+              type="danger" 
+              size="small" 
+              @click="batchDelete"
+            >
+              批量删除 ({{ selectedNotifications.length }})
+            </el-button>
+            <el-button 
               type="primary" 
               size="small" 
               @click="markAllAsRead"
@@ -23,39 +31,55 @@
             <el-empty description="暂无未读消息" />
           </div>
           <div v-else class="notification-list">
+            <div class="select-all-bar">
+              <el-checkbox 
+                v-model="selectAllUnread" 
+                @change="handleSelectAllUnread"
+              >
+                全选
+              </el-checkbox>
+            </div>
             <div 
               v-for="notification in unreadNotifications" 
               :key="notification.notificationId"
               class="notification-item unread"
             >
-              <div class="notification-header">
-                <div class="notification-type-badge">
-                  <el-tag :type="getTypeColor(notification.notificationType)" size="small">
-                    {{ getTypeName(notification.notificationType) }}
-                  </el-tag>
-                </div>
-                <div class="notification-actions">
-                  <el-button 
-                    type="primary" 
-                    size="small" 
-                    text
-                    @click="markAsRead(notification.notificationId)"
-                  >
-                    标记已读
-                  </el-button>
-                  <el-button 
-                    type="danger" 
-                    size="small" 
-                    text
-                    @click="deleteNotification(notification.notificationId)"
-                  >
-                    删除
-                  </el-button>
-                </div>
+              <div class="notification-checkbox">
+                <el-checkbox 
+                  :model-value="isSelected(notification.notificationId)"
+                  @change="toggleSelection(notification.notificationId)"
+                />
               </div>
-              <div class="notification-title">{{ notification.title }}</div>
-              <div class="notification-content">{{ notification.content }}</div>
-              <div class="notification-time">{{ formatDate(notification.createdAt) }}</div>
+              <div class="notification-content-wrapper">
+                <div class="notification-header">
+                  <div class="notification-type-badge">
+                    <el-tag :type="getTypeColor(notification.notificationType)" size="small">
+                      {{ getTypeName(notification.notificationType) }}
+                    </el-tag>
+                  </div>
+                  <div class="notification-actions">
+                    <el-button 
+                      type="primary" 
+                      size="small" 
+                      text
+                      @click="markAsRead(notification.notificationId)"
+                    >
+                      标记已读
+                    </el-button>
+                    <el-button 
+                      type="danger" 
+                      size="small" 
+                      text
+                      @click="deleteNotification(notification.notificationId)"
+                    >
+                      删除
+                    </el-button>
+                  </div>
+                </div>
+                <div class="notification-title">{{ notification.title }}</div>
+                <div class="notification-content">{{ notification.content }}</div>
+                <div class="notification-time">{{ formatDate(notification.createdAt) }}</div>
+              </div>
             </div>
           </div>
         </el-tab-pane>
@@ -65,44 +89,60 @@
             <el-empty description="暂无消息" />
           </div>
           <div v-else class="notification-list">
+            <div class="select-all-bar">
+              <el-checkbox 
+                v-model="selectAllMessages" 
+                @change="handleSelectAllMessages"
+              >
+                全选
+              </el-checkbox>
+            </div>
             <div 
               v-for="notification in allNotifications" 
               :key="notification.notificationId"
               class="notification-item"
               :class="{ unread: !notification.read }"
             >
-              <div class="notification-header">
-                <div class="notification-type-badge">
-                  <el-tag :type="getTypeColor(notification.notificationType)" size="small">
-                    {{ getTypeName(notification.notificationType) }}
-                  </el-tag>
-                  <el-tag v-if="!notification.read" type="danger" size="small" style="margin-left: 5px">
-                    未读
-                  </el-tag>
-                </div>
-                <div class="notification-actions">
-                  <el-button 
-                    v-if="!notification.read"
-                    type="primary" 
-                    size="small" 
-                    text
-                    @click="markAsRead(notification.notificationId)"
-                  >
-                    标记已读
-                  </el-button>
-                  <el-button 
-                    type="danger" 
-                    size="small" 
-                    text
-                    @click="deleteNotification(notification.notificationId)"
-                  >
-                    删除
-                  </el-button>
-                </div>
+              <div class="notification-checkbox">
+                <el-checkbox 
+                  :model-value="isSelected(notification.notificationId)"
+                  @change="toggleSelection(notification.notificationId)"
+                />
               </div>
-              <div class="notification-title">{{ notification.title }}</div>
-              <div class="notification-content">{{ notification.content }}</div>
-              <div class="notification-time">{{ formatDate(notification.createdAt) }}</div>
+              <div class="notification-content-wrapper">
+                <div class="notification-header">
+                  <div class="notification-type-badge">
+                    <el-tag :type="getTypeColor(notification.notificationType)" size="small">
+                      {{ getTypeName(notification.notificationType) }}
+                    </el-tag>
+                    <el-tag v-if="!notification.read" type="danger" size="small" style="margin-left: 5px">
+                      未读
+                    </el-tag>
+                  </div>
+                  <div class="notification-actions">
+                    <el-button 
+                      v-if="!notification.read"
+                      type="primary" 
+                      size="small" 
+                      text
+                      @click="markAsRead(notification.notificationId)"
+                    >
+                      标记已读
+                    </el-button>
+                    <el-button 
+                      type="danger" 
+                      size="small" 
+                      text
+                      @click="deleteNotification(notification.notificationId)"
+                    >
+                      删除
+                    </el-button>
+                  </div>
+                </div>
+                <div class="notification-title">{{ notification.title }}</div>
+                <div class="notification-content">{{ notification.content }}</div>
+                <div class="notification-time">{{ formatDate(notification.createdAt) }}</div>
+              </div>
             </div>
           </div>
         </el-tab-pane>
@@ -121,6 +161,9 @@ const authStore = useAuthStore()
 const activeTab = ref('unread')
 const allNotifications = ref([])
 const unreadCount = ref(0)
+const selectedNotifications = ref([])
+const selectAllUnread = ref(false)
+const selectAllMessages = ref(false)
 
 const unreadNotifications = computed(() => {
   return allNotifications.value.filter(n => !n.read)
@@ -145,6 +188,48 @@ const loadUnreadCount = async () => {
     }
   } catch (error) {
     console.error('加载未读数失败', error)
+  }
+}
+
+const isSelected = (notificationId) => {
+  return selectedNotifications.value.includes(notificationId)
+}
+
+const toggleSelection = (notificationId) => {
+  const index = selectedNotifications.value.indexOf(notificationId)
+  if (index > -1) {
+    selectedNotifications.value.splice(index, 1)
+  } else {
+    selectedNotifications.value.push(notificationId)
+  }
+  updateSelectAllState()
+}
+
+const handleSelectAllUnread = (value) => {
+  if (value) {
+    const unreadIds = unreadNotifications.value.map(n => n.notificationId)
+    selectedNotifications.value = [...new Set([...selectedNotifications.value, ...unreadIds])]
+  } else {
+    const unreadIds = unreadNotifications.value.map(n => n.notificationId)
+    selectedNotifications.value = selectedNotifications.value.filter(id => !unreadIds.includes(id))
+  }
+}
+
+const handleSelectAllMessages = (value) => {
+  if (value) {
+    selectedNotifications.value = allNotifications.value.map(n => n.notificationId)
+  } else {
+    selectedNotifications.value = []
+  }
+}
+
+const updateSelectAllState = () => {
+  if (activeTab.value === 'unread') {
+    const unreadIds = unreadNotifications.value.map(n => n.notificationId)
+    selectAllUnread.value = unreadIds.length > 0 && unreadIds.every(id => selectedNotifications.value.includes(id))
+  } else {
+    const allIds = allNotifications.value.map(n => n.notificationId)
+    selectAllMessages.value = allIds.length > 0 && allIds.every(id => selectedNotifications.value.includes(id))
   }
 }
 
@@ -185,12 +270,46 @@ const deleteNotification = async (notificationId) => {
     const response = await notificationAPI.deleteNotification(notificationId)
     if (response.success) {
       ElMessage.success('删除成功')
+      // Remove from selected if it was selected
+      const index = selectedNotifications.value.indexOf(notificationId)
+      if (index > -1) {
+        selectedNotifications.value.splice(index, 1)
+      }
+      await loadAllNotifications()
+      await loadUnreadCount()
+      updateSelectAllState()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+const batchDelete = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedNotifications.value.length} 条消息吗？`, 
+      '批量删除', 
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    const response = await notificationAPI.batchDeleteNotifications(selectedNotifications.value)
+    if (response.success) {
+      ElMessage.success('批量删除成功')
+      selectedNotifications.value = []
+      selectAllUnread.value = false
+      selectAllMessages.value = false
       await loadAllNotifications()
       await loadUnreadCount()
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElMessage.error('批量删除失败')
     }
   }
 }
@@ -248,7 +367,16 @@ onMounted(() => {
   margin-top: 20px;
 }
 
+.select-all-bar {
+  padding: 10px 20px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  background: #fafafa;
+}
+
 .notification-item {
+  display: flex;
   padding: 20px;
   border: 1px solid #eee;
   border-radius: 4px;
@@ -264,6 +392,17 @@ onMounted(() => {
 .notification-item.unread {
   background-color: #ecf5ff;
   border-color: #b3d8ff;
+}
+
+.notification-checkbox {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 5px;
+  margin-right: 15px;
+}
+
+.notification-content-wrapper {
+  flex: 1;
 }
 
 .notification-header {

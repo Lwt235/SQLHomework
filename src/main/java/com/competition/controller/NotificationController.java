@@ -65,4 +65,15 @@ public class NotificationController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+    
+    @DeleteMapping("/batch")
+    public ResponseEntity<ApiResponse<String>> batchDeleteNotifications(@RequestBody Map<String, List<Integer>> request) {
+        try {
+            List<Integer> notificationIds = request.get("notificationIds");
+            notificationService.batchDeleteNotifications(notificationIds);
+            return ResponseEntity.ok(ApiResponse.success("通知已批量删除", "success"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }
