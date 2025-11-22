@@ -17,33 +17,33 @@
       <div class="filter-section">
         <el-form :inline="true" :model="filters">
           <el-form-item label="用户名">
-            <el-input 
-              v-model="filters.username" 
-              placeholder="搜索用户名" 
+            <el-input
+              v-model="filters.username"
+              placeholder="搜索用户名"
               clearable
               @clear="applyFilters"
             />
           </el-form-item>
           <el-form-item label="学校">
-            <el-input 
-              v-model="filters.school" 
-              placeholder="搜索学校" 
+            <el-input
+              v-model="filters.school"
+              placeholder="搜索学校"
               clearable
               @clear="applyFilters"
             />
           </el-form-item>
           <el-form-item label="权限">
-            <el-select 
-              v-model="filters.roleCode" 
-              placeholder="选择权限" 
+            <el-select
+              v-model="filters.roleCode"
+              placeholder="选择权限"
               clearable
               @clear="applyFilters"
             >
               <el-option label="全部" value="" />
-              <el-option 
-                v-for="role in availableRoles" 
-                :key="role.roleCode" 
-                :label="role.roleName" 
+              <el-option
+                v-for="role in availableRoles"
+                :key="role.roleCode"
+                :label="role.roleName"
                 :value="role.roleCode"
               />
             </el-select>
@@ -87,36 +87,36 @@
         </el-table-column>
         <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
-            <el-button 
-              v-if="row.userStatus === 'inactive'" 
-              type="success" 
-              size="small" 
+            <el-button
+              v-if="row.userStatus === 'inactive'"
+              type="success"
+              size="small"
               @click="activateUser(row.userId)"
               :disabled="row.userId === authStore.user?.userId"
             >
               激活
             </el-button>
-            <el-button 
-              v-if="row.userStatus === 'active'" 
-              type="warning" 
-              size="small" 
+            <el-button
+              v-if="row.userStatus === 'active'"
+              type="warning"
+              size="small"
               @click="suspendUser(row.userId)"
               :disabled="row.userId === authStore.user?.userId"
             >
               暂停
             </el-button>
-            <el-button 
-              v-if="row.userStatus === 'suspended'" 
-              type="success" 
-              size="small" 
+            <el-button
+              v-if="row.userStatus === 'suspended'"
+              type="success"
+              size="small"
               @click="activateUser(row.userId)"
               :disabled="row.userId === authStore.user?.userId"
             >
               激活
             </el-button>
-            <el-button 
-              type="primary" 
-              size="small" 
+            <el-button
+              type="primary"
+              size="small"
               @click="showRoleDialog(row)"
               :disabled="row.userId === authStore.user?.userId"
             >
@@ -143,9 +143,9 @@
         <el-form>
           <el-form-item label="选择角色">
             <el-checkbox-group v-model="selectedRoles">
-              <el-checkbox 
-                v-for="role in availableRoles" 
-                :key="role.roleId" 
+              <el-checkbox
+                v-for="role in availableRoles"
+                :key="role.roleId"
                 :label="role.roleId"
               >
                 {{ role.roleName }} ({{ role.roleCode }})
@@ -201,7 +201,7 @@ const loadAllUsers = async (applyFilter = false) => {
         params.sortOrder = filters.value.sortOrder
       }
     }
-    
+
     const response = await userAPI.getAllUsers(params)
     if (response.success) {
       users.value = response.data
@@ -242,7 +242,7 @@ const loadRoles = async () => {
 const showRoleDialog = async (user) => {
   selectedUser.value = user
   roleDialogVisible.value = true
-  
+
   // Load user's current roles
   try {
     const response = await userAPI.getUserRoles(user.userId)
@@ -341,5 +341,5 @@ onMounted(() => {
   background-color: #f5f7fa;
   border-radius: 4px;
 }
-}
+
 </style>
