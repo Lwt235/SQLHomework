@@ -27,6 +27,10 @@
             <el-icon><Medal /></el-icon>
             <span>奖项管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/system-time">
+            <el-icon><Clock /></el-icon>
+            <span>系统时间（测试）</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-main>

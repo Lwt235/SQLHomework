@@ -240,3 +240,21 @@ export const notificationAPI = {
     return api.delete('/notifications/batch', { data: { notificationIds } })
   }
 }
+
+export const systemTimeAPI = {
+  getCurrentTime() {
+    return api.get('/system/time/current')
+  },
+  enableTestMode() {
+    return api.post('/system/time/test-mode/enable')
+  },
+  disableTestMode() {
+    return api.post('/system/time/test-mode/disable')
+  },
+  setTestTime(testTime) {
+    return api.post('/system/time/test-mode/set', { testTime })
+  },
+  setTimeOffset(offsetSeconds) {
+    return api.post('/system/time/test-mode/offset', { offsetSeconds })
+  }
+}
