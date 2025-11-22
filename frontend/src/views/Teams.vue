@@ -133,8 +133,8 @@
                 </span>
               </template>
             </el-table-column>
-            <el-table-column label="真实姓名" prop="realName" width="150" />
-            <el-table-column label="角色" prop="roleInTeam" width="120">
+            <el-table-column label="真实姓名" prop="realName" width="100" />
+            <el-table-column label="角色" prop="roleInTeam" width="90">
               <template #default="{ row }">
                 <el-tag v-if="row.roleInTeam === 'leader'" type="warning">队长</el-tag>
                 <el-tag v-else-if="row.roleInTeam === 'vice-leader'" type="success">副队长</el-tag>

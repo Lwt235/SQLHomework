@@ -90,6 +90,7 @@ const authStore = useAuthStore()
 const competitions = ref([])
 const loading = ref(false)
 const statusFilter = ref('')
+const userRegistrations = ref([])
 
 const loadCompetitions = async () => {
   loading.value = true
@@ -108,6 +109,19 @@ const loadCompetitions = async () => {
   }
 }
 
+const loadUserRegistrations = async () => {
+  if (!authStore.user) return
+  
+  try {
+    const response = await registrationAPI.getRegistrationsByUser(authStore.user.userId)
+    if (response.success) {
+      userRegistrations.value = response.data
+    }
+  } catch (error) {
+    console.error('加载用户报名信息失败', error)
+  }
+}
+
 const formatDate = (dateStr) => {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleString('zh-CN')
@@ -121,8 +135,15 @@ const canApply = (competition) => {
          competition.competitionStatus === 'published'
 }
 
+const isRegistered = (competitionId) => {
+  return userRegistrations.value.some(
+    reg => reg.competitionId === competitionId && 
+           reg.registrationStatus === 'approved'
+  )
+}
+
 const isOngoing = (competition) => {
-  return competition.competitionStatus === 'ongoing'
+  return competition.competitionStatus === 'ongoing' && isRegistered(competition.competitionId)
 }
 
 const viewDetail = (id) => {
@@ -142,6 +163,7 @@ const navigateToSubmit = (competitionId) => {
 
 onMounted(() => {
   loadCompetitions()
+  loadUserRegistrations()
 })
 </script>
 

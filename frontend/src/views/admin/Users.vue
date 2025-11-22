@@ -138,9 +138,23 @@
     </el-card>
 
     <!-- Role Assignment Dialog -->
-    <el-dialog v-model="roleDialogVisible" title="分配权限" width="500px">
+    <el-dialog 
+      v-model="roleDialogVisible" 
+      :title="isActivationMode ? '激活用户 - 必须分配角色' : '分配权限'" 
+      width="500px"
+      :close-on-click-modal="!isActivationMode"
+      :close-on-press-escape="!isActivationMode"
+      :show-close="!isActivationMode"
+    >
       <div v-if="selectedUser">
         <p><strong>用户：</strong>{{ selectedUser.username }} ({{ selectedUser.realName }})</p>
+        <el-alert 
+          v-if="isActivationMode" 
+          title="激活用户前必须至少分配一个角色" 
+          type="warning" 
+          :closable="false"
+          style="margin-bottom: 15px"
+        />
         <el-form>
           <el-form-item label="选择角色">
             <el-checkbox-group v-model="selectedRoles">
@@ -157,8 +171,14 @@
       </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="roleDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="assignRoles">确定</el-button>
+          <el-button v-if="!isActivationMode" @click="roleDialogVisible = false">取消</el-button>
+          <el-button 
+            type="primary" 
+            @click="assignRoles"
+            :disabled="isActivationMode && selectedRoles.length === 0"
+          >
+            {{ isActivationMode ? '分配角色并激活' : '确定' }}
+          </el-button>
         </span>
       </template>
     </el-dialog>
@@ -179,6 +199,7 @@ const roleDialogVisible = ref(false)
 const selectedUser = ref(null)
 const selectedRoles = ref([])
 const availableRoles = ref([])
+const isActivationMode = ref(false) // Track if dialog is for activation
 
 // Filter state
 const filters = ref({
@@ -242,6 +263,7 @@ const loadRoles = async () => {
 
 const showRoleDialog = async (user) => {
   selectedUser.value = user
+  isActivationMode.value = false
   roleDialogVisible.value = true
 
   // Load user's current roles
@@ -256,11 +278,26 @@ const showRoleDialog = async (user) => {
 }
 
 const assignRoles = async () => {
+  if (selectedRoles.value.length === 0) {
+    ElMessage.warning('请至少选择一个角色')
+    return
+  }
+  
   try {
     const response = await userAPI.assignRoles(selectedUser.value.userId, selectedRoles.value)
     if (response.success) {
       ElMessage.success('权限分配成功')
+      
+      // If in activation mode, activate the user after role assignment
+      if (isActivationMode.value) {
+        const activateResponse = await userAPI.activateUser(selectedUser.value.userId)
+        if (activateResponse.success) {
+          ElMessage.success('用户已激活')
+        }
+      }
+      
       roleDialogVisible.value = false
+      isActivationMode.value = false
       loadAllUsers()
     }
   } catch (error) {
@@ -269,7 +306,29 @@ const assignRoles = async () => {
 }
 
 const activateUser = async (userId) => {
+  // First, show the role dialog to assign roles
+  const user = users.value.find(u => u.userId === userId)
+  if (!user) {
+    ElMessage.error('用户不存在')
+    return
+  }
+  
+  // Load user's current roles first
   try {
+    const rolesResponse = await userAPI.getUserRoles(userId)
+    const currentRoles = rolesResponse.success ? rolesResponse.data : []
+    
+    // If user has no roles or is inactive, force role assignment
+    if (user.userStatus === 'inactive' && currentRoles.length === 0) {
+      ElMessage.warning('激活用户前必须先分配角色')
+      selectedUser.value = user
+      selectedRoles.value = []
+      isActivationMode.value = true
+      roleDialogVisible.value = true
+      return
+    }
+    
+    // User has roles, proceed with activation
     const response = await userAPI.activateUser(userId)
     if (response.success) {
       ElMessage.success('用户已激活')
