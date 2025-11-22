@@ -185,10 +185,10 @@ const isInSubmissionPeriod = (submission) => {
 }
 
 // Check if any submission for the same registration is locked
+// A submission is locked when finalLockedAt is set (which also sets status to 'locked')
 const hasLockedSubmission = (registrationId) => {
   return submissions.value.some(s => 
-    s.registrationId === registrationId && 
-    (s.finalLockedAt != null || s.submissionStatus === 'locked')
+    s.registrationId === registrationId && s.finalLockedAt != null
   )
 }
 
