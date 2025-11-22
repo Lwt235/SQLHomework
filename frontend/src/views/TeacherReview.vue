@@ -45,7 +45,7 @@
                 <el-tag v-if="row.judgeStatus === 'completed'" type="success">
                   已确认
                 </el-tag>
-                <el-tag v-else-if="row.score !== null && row.score !== undefined" type="warning">
+                <el-tag v-else-if="row.judgeStatus === 'reviewed'" type="warning">
                   已评分
                 </el-tag>
                 <el-tag v-else type="info">待评审</el-tag>
@@ -60,10 +60,10 @@
                     @click="openReviewDialog(row)"
                     :disabled="row.judgeStatus === 'completed'"
                   >
-                    {{ row.judgeStatus === 'completed' ? '已锁定' : (row.score !== null && row.score !== undefined ? '查看/修改' : '开始评审') }}
+                    {{ row.judgeStatus === 'completed' ? '已锁定' : (row.judgeStatus === 'reviewed' ? '查看/修改' : '开始评审') }}
                   </el-button>
                   <el-button 
-                    v-if="row.score !== null && row.score !== undefined && row.judgeStatus !== 'completed'"
+                    v-if="row.judgeStatus === 'reviewed'"
                     type="success" 
                     size="small" 
                     @click="confirmReview(row)"

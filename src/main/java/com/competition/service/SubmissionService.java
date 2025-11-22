@@ -2,10 +2,12 @@ package com.competition.service;
 
 import com.competition.entity.Submission;
 import com.competition.entity.Registration;
+import com.competition.entity.Competition;
 import com.competition.entity.TeamMember;
 import com.competition.entity.JudgeAssignment;
 import com.competition.repository.SubmissionRepository;
 import com.competition.repository.RegistrationRepository;
+import com.competition.repository.CompetitionRepository;
 import com.competition.repository.TeamMemberRepository;
 import com.competition.repository.JudgeAssignmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,9 @@ public class SubmissionService {
     
     @Autowired
     private RegistrationRepository registrationRepository;
+    
+    @Autowired
+    private CompetitionRepository competitionRepository;
     
     @Autowired
     private TeamMemberRepository teamMemberRepository;
@@ -81,6 +86,25 @@ public class SubmissionService {
         // Check if user has permission (must be team leader for team registrations)
         if (!canUserModifySubmission(submission.getRegistrationId(), userId)) {
             throw new RuntimeException("只有队长可以提交团队作品");
+        }
+        
+        // Check if competition submission period is valid
+        Registration registration = registrationRepository.findById(submission.getRegistrationId())
+                .orElseThrow(() -> new RuntimeException("报名信息不存在"));
+        
+        Competition competition = competitionRepository.findById(registration.getCompetitionId())
+                .orElseThrow(() -> new RuntimeException("竞赛信息不存在"));
+        
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Check if submission period has started
+        if (competition.getSubmitStart() != null && now.isBefore(competition.getSubmitStart())) {
+            throw new RuntimeException("竞赛作品提交期尚未开始");
+        }
+        
+        // Check if submission period has ended
+        if (competition.getSubmitEnd() != null && now.isAfter(competition.getSubmitEnd())) {
+            throw new RuntimeException("竞赛作品提交期已结束");
         }
 
         submission.setSubmissionStatus("submitted");
