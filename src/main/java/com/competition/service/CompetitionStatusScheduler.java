@@ -3,12 +3,14 @@ package com.competition.service;
 import com.competition.entity.Competition;
 import com.competition.repository.CompetitionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Service to automatically update competition status based on time
@@ -24,20 +26,19 @@ public class CompetitionStatusScheduler {
     
     /**
      * Update competition statuses based on current time
-     * Runs every 5 minutes
+     * Configurable interval via application.properties
      */
-    @Scheduled(fixedRate = 300000) // 5 minutes
+    @Scheduled(fixedRateString = "${competition.status.update.interval:300000}")
     @Transactional
     public void updateCompetitionStatuses() {
         LocalDateTime now = timeService.getCurrentTime();
         
-        List<Competition> competitions = competitionRepository.findAll();
+        // Only load competitions that might need status updates (not already finished)
+        List<Competition> competitions = competitionRepository.findAll().stream()
+                .filter(c -> !c.getDeleted() && !"finished".equals(c.getCompetitionStatus()))
+                .collect(Collectors.toList());
         
         for (Competition competition : competitions) {
-            if (competition.getDeleted()) {
-                continue;
-            }
-            
             String newStatus = determineCompetitionStatus(competition, now);
             
             // Only update if status changed
