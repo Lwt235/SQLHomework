@@ -68,17 +68,6 @@
           </el-form-item>
           
           <el-form-item v-if="registrationForm.participationType === 'team'" label="选择团队" prop="teamId">
-            <el-radio-group v-model="registrationForm.teamSelectionType">
-              <el-radio label="existing">使用已有团队</el-radio>
-              <el-radio label="new">创建新团队</el-radio>
-            </el-radio-group>
-          </el-form-item>
-          
-          <el-form-item 
-            v-if="registrationForm.participationType === 'team' && registrationForm.teamSelectionType === 'existing'" 
-            label="我的团队" 
-            prop="teamId"
-          >
             <el-select v-model="registrationForm.teamId" placeholder="请选择团队" style="width: 100%">
               <el-option 
                 v-for="team in captainTeams" 
@@ -93,16 +82,8 @@
               </el-option>
             </el-select>
             <div v-if="captainTeams.length === 0" style="color: #909399; margin-top: 8px">
-              您还没有作为队长的团队，请先创建团队或选择"创建新团队"
+              您还没有作为队长的团队，请先在"团队管理"页面创建团队
             </div>
-          </el-form-item>
-          
-          <el-form-item 
-            v-if="registrationForm.participationType === 'team' && registrationForm.teamSelectionType === 'new'" 
-            label="团队名称" 
-            prop="teamName"
-          >
-            <el-input v-model="registrationForm.teamName" placeholder="请输入团队名称" />
           </el-form-item>
           
           <el-form-item label="备注信息" prop="remark">
@@ -131,11 +112,8 @@
           <el-descriptions-item label="参赛形式">
             {{ registrationForm.participationType === 'individual' ? '个人参赛' : '团队参赛' }}
           </el-descriptions-item>
-          <el-descriptions-item v-if="registrationForm.participationType === 'team' && registrationForm.teamSelectionType === 'existing'" label="选择团队">
+          <el-descriptions-item v-if="registrationForm.participationType === 'team'" label="选择团队">
             {{ getSelectedTeamName() }}
-          </el-descriptions-item>
-          <el-descriptions-item v-if="registrationForm.participationType === 'team' && registrationForm.teamSelectionType === 'new'" label="团队名称">
-            {{ registrationForm.teamName }}
           </el-descriptions-item>
           <el-descriptions-item label="备注信息">
             {{ registrationForm.remark || '无' }}
@@ -182,18 +160,13 @@ const captainTeams = ref([])
 
 const registrationForm = ref({
   participationType: 'individual',
-  teamSelectionType: 'new',
   teamId: null,
-  teamName: '',
   remark: ''
 })
 
 const rules = {
   participationType: [
     { required: true, message: '请选择参赛形式', trigger: 'change' }
-  ],
-  teamName: [
-    { required: true, message: '请输入团队名称', trigger: 'blur' }
   ],
   teamId: [
     { required: true, message: '请选择团队', trigger: 'change' }
@@ -212,10 +185,6 @@ const loadCaptainTeams = async () => {
     const response = await teamAPI.getMyCaptainTeams()
     if (response.success) {
       captainTeams.value = response.data
-      // If user has captain teams, default to existing
-      if (captainTeams.value.length > 0) {
-        registrationForm.value.teamSelectionType = 'existing'
-      }
     }
   } catch (error) {
     console.error('Failed to load captain teams:', error)
@@ -303,13 +272,14 @@ const submitRegistration = async () => {
       remark: registrationForm.value.remark
     }
     
-    // Add teamId or teamName based on selection
+    // Add teamId if team participation
     if (registrationForm.value.participationType === 'team') {
-      if (registrationForm.value.teamSelectionType === 'existing') {
-        registrationData.teamId = registrationForm.value.teamId
-      } else {
-        registrationData.teamName = registrationForm.value.teamName
+      if (!registrationForm.value.teamId) {
+        ElMessage.error('请选择团队')
+        submitting.value = false
+        return
       }
+      registrationData.teamId = registrationForm.value.teamId
     }
     
     const response = await registrationAPI.createRegistration(registrationData)

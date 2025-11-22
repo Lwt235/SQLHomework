@@ -53,7 +53,23 @@ public class UserService {
     public User updateUserProfile(Integer userId, Map<String, Object> updates) {
         User user = getUserById(userId);
         
-        // Update allowed fields (username is not editable as it's the login credential)
+        // Check if username is being updated
+        if (updates.containsKey("username")) {
+            String newUsername = (String) updates.get("username");
+            if (newUsername != null && !newUsername.trim().isEmpty()) {
+                // Check if username is already used by another user
+                if (userRepository.existsByUsername(newUsername)) {
+                    userRepository.findByUsername(newUsername).ifPresent(existingUser -> {
+                        if (!existingUser.getUserId().equals(userId)) {
+                            throw new RuntimeException("用户名已被其他用户使用");
+                        }
+                    });
+                }
+                user.setUsername(newUsername);
+            }
+        }
+        
+        // Update allowed fields
         if (updates.containsKey("realName")) {
             String realName = (String) updates.get("realName");
             user.setRealName(realName);

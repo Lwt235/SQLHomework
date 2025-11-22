@@ -1,16 +1,42 @@
 package com.competition.service;
 
 import com.competition.entity.JudgeAssignment;
+import com.competition.entity.Submission;
+import com.competition.entity.User;
+import com.competition.entity.UserRole;
+import com.competition.entity.Role;
 import com.competition.repository.JudgeAssignmentRepository;
+import com.competition.repository.SubmissionRepository;
+import com.competition.repository.UserRepository;
+import com.competition.repository.UserRoleRepository;
+import com.competition.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 @Service
 public class JudgeService {
 
     @Autowired
     private JudgeAssignmentRepository judgeAssignmentRepository;
+    
+    @Autowired
+    private SubmissionRepository submissionRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+    
+    @Autowired
+    private RoleRepository roleRepository;
 
     public List<JudgeAssignment> getAllAssignments() {
         return judgeAssignmentRepository.findAll();
@@ -30,5 +56,166 @@ public class JudgeService {
 
     public List<JudgeAssignment> getAssignmentsBySubmission(Integer submissionId) {
         return judgeAssignmentRepository.findBySubmissionId(submissionId);
+    }
+    
+    /**
+     * Manually assign a judge to a submission
+     */
+    @Transactional
+    public JudgeAssignment assignJudgeToSubmission(Integer judgeUserId, Integer submissionId, BigDecimal weight) {
+        // Validate judge user exists and has TEACHER role
+        User judge = userRepository.findById(judgeUserId)
+                .orElseThrow(() -> new RuntimeException("评审教师不存在"));
+        
+        if (!hasTeacherRole(judgeUserId)) {
+            throw new RuntimeException("只有教师用户才能被分配评审任务");
+        }
+        
+        // Validate submission exists
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("作品不存在"));
+        
+        if (!"locked".equals(submission.getSubmissionStatus())) {
+            throw new RuntimeException("只有已锁定的作品才能分配评审");
+        }
+        
+        // Check if assignment already exists
+        JudgeAssignment.JudgeAssignmentId id = new JudgeAssignment.JudgeAssignmentId();
+        id.setUserId(judgeUserId);
+        id.setSubmissionId(submissionId);
+        
+        if (judgeAssignmentRepository.findById(id).isPresent()) {
+            throw new RuntimeException("该评审已被分配给此作品");
+        }
+        
+        // Create new assignment
+        JudgeAssignment assignment = new JudgeAssignment();
+        assignment.setUserId(judgeUserId);
+        assignment.setSubmissionId(submissionId);
+        assignment.setWeight(weight != null ? weight : BigDecimal.ONE);
+        assignment.setScore(BigDecimal.ZERO);
+        
+        return judgeAssignmentRepository.save(assignment);
+    }
+    
+    /**
+     * Randomly assign judges to locked submissions
+     * @param judgesPerSubmission Number of judges to assign per submission
+     * @return Number of assignments created
+     */
+    @Transactional
+    public int randomAssignJudges(int judgesPerSubmission) {
+        if (judgesPerSubmission <= 0) {
+            throw new RuntimeException("每个作品至少需要分配1个评审");
+        }
+        
+        // Get all teachers (judges)
+        List<User> teachers = getAllTeachers();
+        if (teachers.isEmpty()) {
+            throw new RuntimeException("系统中没有教师用户可以分配评审任务");
+        }
+        
+        if (teachers.size() < judgesPerSubmission) {
+            throw new RuntimeException("教师用户数量不足，无法完成分配");
+        }
+        
+        // Get all locked submissions that need judge assignment
+        List<Submission> lockedSubmissions = submissionRepository.findBySubmissionStatus("locked");
+        if (lockedSubmissions.isEmpty()) {
+            throw new RuntimeException("没有需要分配评审的锁定作品");
+        }
+        
+        int assignmentCount = 0;
+        Random random = new Random();
+        
+        for (Submission submission : lockedSubmissions) {
+            // Get existing assignments for this submission
+            List<JudgeAssignment> existingAssignments = judgeAssignmentRepository.findBySubmissionId(submission.getSubmissionId());
+            
+            // If already has enough judges, skip
+            if (existingAssignments.size() >= judgesPerSubmission) {
+                continue;
+            }
+            
+            // Get teachers who are not already assigned to this submission
+            List<Integer> assignedTeacherIds = existingAssignments.stream()
+                    .map(JudgeAssignment::getUserId)
+                    .collect(Collectors.toList());
+            
+            List<User> availableTeachers = teachers.stream()
+                    .filter(t -> !assignedTeacherIds.contains(t.getUserId()))
+                    .collect(Collectors.toList());
+            
+            // Calculate how many more judges needed
+            int needCount = judgesPerSubmission - existingAssignments.size();
+            needCount = Math.min(needCount, availableTeachers.size());
+            
+            // Randomly select teachers
+            List<User> selectedTeachers = new ArrayList<>(availableTeachers);
+            while (selectedTeachers.size() > needCount) {
+                selectedTeachers.remove(random.nextInt(selectedTeachers.size()));
+            }
+            
+            // Create assignments
+            BigDecimal weight = BigDecimal.ONE.divide(BigDecimal.valueOf(judgesPerSubmission), 2, BigDecimal.ROUND_HALF_UP);
+            for (User teacher : selectedTeachers) {
+                JudgeAssignment assignment = new JudgeAssignment();
+                assignment.setUserId(teacher.getUserId());
+                assignment.setSubmissionId(submission.getSubmissionId());
+                assignment.setWeight(weight);
+                assignment.setScore(BigDecimal.ZERO);
+                judgeAssignmentRepository.save(assignment);
+                assignmentCount++;
+            }
+        }
+        
+        return assignmentCount;
+    }
+    
+    /**
+     * Get all users with TEACHER role
+     */
+    private List<User> getAllTeachers() {
+        // Find TEACHER role
+        List<Role> roles = roleRepository.findAll();
+        Role teacherRole = roles.stream()
+                .filter(r -> "TEACHER".equalsIgnoreCase(r.getRoleCode()))
+                .findFirst()
+                .orElse(null);
+        
+        if (teacherRole == null) {
+            return new ArrayList<>();
+        }
+        
+        // Find all users with TEACHER role
+        List<UserRole> teacherUserRoles = userRoleRepository.findByRoleId(teacherRole.getRoleId());
+        List<Integer> teacherUserIds = teacherUserRoles.stream()
+                .map(UserRole::getUserId)
+                .collect(Collectors.toList());
+        
+        if (teacherUserIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // Return active, non-deleted teachers
+        return userRepository.findAllById(teacherUserIds).stream()
+                .filter(u -> !u.getDeleted() && UserService.STATUS_ACTIVE.equals(u.getUserStatus()))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Check if user has TEACHER role
+     */
+    private boolean hasTeacherRole(Integer userId) {
+        List<UserRole> userRoles = userRoleRepository.findByUserId(userId);
+        
+        for (UserRole userRole : userRoles) {
+            Role role = roleRepository.findById(userRole.getRoleId()).orElse(null);
+            if (role != null && "TEACHER".equalsIgnoreCase(role.getRoleCode())) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }

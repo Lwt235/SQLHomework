@@ -5,11 +5,13 @@ import com.competition.entity.Competition;
 import com.competition.entity.User;
 import com.competition.entity.UserRole;
 import com.competition.entity.Role;
+import com.competition.entity.TeamMember;
 import com.competition.repository.RegistrationRepository;
 import com.competition.repository.CompetitionRepository;
 import com.competition.repository.UserRepository;
 import com.competition.repository.UserRoleRepository;
 import com.competition.repository.RoleRepository;
+import com.competition.repository.TeamMemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -34,6 +36,9 @@ public class RegistrationService {
     
     @Autowired
     private RoleRepository roleRepository;
+    
+    @Autowired
+    private TeamMemberRepository teamMemberRepository;
 
     public List<Registration> getAllRegistrations() {
         return registrationRepository.findAll().stream()
@@ -124,7 +129,38 @@ public class RegistrationService {
     }
 
     public List<Registration> getRegistrationsByUser(Integer userId) {
-        return registrationRepository.findByUserId(userId);
+        // Get direct user registrations
+        List<Registration> directRegistrations = registrationRepository.findByUserId(userId);
+        
+        // Get team-based registrations where user is a member
+        List<TeamMember> teamMemberships = teamMemberRepository.findByUserId(userId);
+        List<Integer> teamIds = teamMemberships.stream()
+                .map(TeamMember::getTeamId)
+                .collect(Collectors.toList());
+        
+        List<Registration> teamRegistrations = new java.util.ArrayList<>();
+        for (Integer teamId : teamIds) {
+            List<Registration> regs = registrationRepository.findByTeamId(teamId);
+            teamRegistrations.addAll(regs);
+        }
+        
+        // Combine and deduplicate
+        java.util.Set<Integer> registrationIds = new java.util.HashSet<>();
+        List<Registration> allRegistrations = new java.util.ArrayList<>();
+        
+        for (Registration reg : directRegistrations) {
+            if (!reg.getDeleted() && registrationIds.add(reg.getRegistrationId())) {
+                allRegistrations.add(reg);
+            }
+        }
+        
+        for (Registration reg : teamRegistrations) {
+            if (!reg.getDeleted() && registrationIds.add(reg.getRegistrationId())) {
+                allRegistrations.add(reg);
+            }
+        }
+        
+        return allRegistrations;
     }
 
     public List<Registration> getRegistrationsByStatus(String status) {
