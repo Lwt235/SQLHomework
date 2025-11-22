@@ -48,7 +48,25 @@ public class JudgeService {
     }
 
     public JudgeAssignment updateAssignment(JudgeAssignment assignment) {
-        return judgeAssignmentRepository.save(assignment);
+        // Get existing assignment to preserve created_at and update judgeStatus
+        JudgeAssignment.JudgeAssignmentId id = new JudgeAssignment.JudgeAssignmentId();
+        id.setUserId(assignment.getUserId());
+        id.setSubmissionId(assignment.getSubmissionId());
+        
+        JudgeAssignment existing = judgeAssignmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("评审任务不存在"));
+        
+        // Update fields
+        existing.setScore(assignment.getScore());
+        existing.setComment(assignment.getComment());
+        existing.setWeight(assignment.getWeight());
+        
+        // Set status to "reviewed" if score is provided and not yet completed
+        if (assignment.getScore() != null && !"completed".equals(existing.getJudgeStatus())) {
+            existing.setJudgeStatus("reviewed");
+        }
+        
+        return judgeAssignmentRepository.save(existing);
     }
 
     public List<JudgeAssignment> getAssignmentsByJudge(Integer userId) {

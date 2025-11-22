@@ -38,6 +38,7 @@
               placeholder="选择权限"
               clearable
               @clear="applyFilters"
+              style="width: 150px"
             >
               <el-option label="全部" value="" />
               <el-option
@@ -49,7 +50,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="排序">
-            <el-select v-model="filters.sortBy" placeholder="排序字段" clearable>
+            <el-select v-model="filters.sortBy" placeholder="排序字段" clearable style="width: 150px">
               <el-option label="用户名" value="username" />
               <el-option label="学校" value="school" />
               <el-option label="状态" value="userStatus" />
@@ -57,7 +58,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="顺序">
-            <el-select v-model="filters.sortOrder" placeholder="排序顺序">
+            <el-select v-model="filters.sortOrder" placeholder="排序顺序" style="width: 150px">
               <el-option label="升序" value="asc" />
               <el-option label="降序" value="desc" />
             </el-select>

@@ -29,7 +29,7 @@
             <el-button 
               size="small" 
               @click="editSubmission(row)"
-              :disabled="row.finalLockedAt != null"
+              :disabled="hasLockedSubmission(row.registrationId)"
             >
               编辑
             </el-button>
@@ -38,8 +38,8 @@
               type="primary" 
               size="small" 
               @click="submitWork(row.submissionId)"
-              :disabled="!isInSubmissionPeriod(row)"
-              :title="!isInSubmissionPeriod(row) ? '当前不在作品提交时间范围内' : ''"
+              :disabled="hasLockedSubmission(row.registrationId) || !isInSubmissionPeriod(row)"
+              :title="hasLockedSubmission(row.registrationId) ? '该报名已有锁定的作品' : (!isInSubmissionPeriod(row) ? '当前不在作品提交时间范围内' : '')"
             >
               提交作品
             </el-button>
@@ -48,6 +48,7 @@
               type="warning" 
               size="small" 
               @click="lockWork(row.submissionId)"
+              :disabled="hasLockedSubmission(row.registrationId)"
             >
               最终锁定
             </el-button>
@@ -181,6 +182,14 @@ const isInSubmissionPeriod = (submission) => {
   if (submitEnd && now > submitEnd) return false
   
   return true
+}
+
+// Check if any submission for the same registration is locked
+// A submission is locked when finalLockedAt is set (which also sets status to 'locked')
+const hasLockedSubmission = (registrationId) => {
+  return submissions.value.some(s => 
+    s.registrationId === registrationId && s.finalLockedAt != null
+  )
 }
 
 const loadApprovedRegistrations = async () => {
