@@ -40,19 +40,37 @@
                 <el-tag v-else type="warning">未评分</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="100">
+            <el-table-column label="状态" width="120">
               <template #default="{ row }">
-                <el-tag v-if="row.score !== null && row.score !== undefined" type="success">
-                  已完成
+                <el-tag v-if="row.judgeStatus === 'completed'" type="success">
+                  已确认
+                </el-tag>
+                <el-tag v-else-if="row.score !== null && row.score !== undefined" type="warning">
+                  已评分
                 </el-tag>
                 <el-tag v-else type="info">待评审</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="200" fixed="right">
+            <el-table-column label="操作" width="250" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" size="small" @click="openReviewDialog(row)">
-                  {{ row.score !== null && row.score !== undefined ? '查看/修改' : '开始评审' }}
-                </el-button>
+                <el-space>
+                  <el-button 
+                    type="primary" 
+                    size="small" 
+                    @click="openReviewDialog(row)"
+                    :disabled="row.judgeStatus === 'completed'"
+                  >
+                    {{ row.judgeStatus === 'completed' ? '已锁定' : (row.score !== null && row.score !== undefined ? '查看/修改' : '开始评审') }}
+                  </el-button>
+                  <el-button 
+                    v-if="row.score !== null && row.score !== undefined && row.judgeStatus !== 'completed'"
+                    type="success" 
+                    size="small" 
+                    @click="confirmReview(row)"
+                  >
+                    确认完成
+                  </el-button>
+                </el-space>
               </template>
             </el-table-column>
           </el-table>
@@ -144,7 +162,7 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { judgeAPI } from '../api'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const authStore = useAuthStore()
 const activeTab = ref('myAssignments')
@@ -217,12 +235,40 @@ const submitReview = async () => {
           ElMessage.error(response.message || '评审提交失败')
         }
       } catch (error) {
-        ElMessage.error(error.message || '评审提交失败')
+        ElMessage.error(error.response?.data?.message || '评审提交失败')
       } finally {
         submitting.value = false
       }
     }
   })
+}
+
+const confirmReview = async (assignment) => {
+  try {
+    const confirmed = await ElMessageBox.confirm(
+      '确认后将无法再修改评分和评语，是否继续？',
+      '确认完成评审',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    if (confirmed) {
+      const response = await judgeAPI.confirmReview(assignment.userId, assignment.submissionId)
+      if (response.success) {
+        ElMessage.success('评审已确认完成')
+        loadMyAssignments()
+      } else {
+        ElMessage.error(response.message || '确认失败')
+      }
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '确认失败')
+    }
+  }
 }
 
 const formatDate = (dateStr) => {

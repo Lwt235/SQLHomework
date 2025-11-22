@@ -140,7 +140,31 @@ const loadAssignments = async () => {
   try {
     const response = await judgeAPI.getAllAssignments()
     if (response.success) {
-      assignments.value = response.data
+      // Load users and submissions to populate names
+      const usersResponse = await userAPI.getAllUsers()
+      const submissionsResponse = await submissionAPI.getAllSubmissions()
+      
+      const usersMap = {}
+      const submissionsMap = {}
+      
+      if (usersResponse.success) {
+        usersResponse.data.forEach(user => {
+          usersMap[user.userId] = user
+        })
+      }
+      
+      if (submissionsResponse.success) {
+        submissionsResponse.data.forEach(submission => {
+          submissionsMap[submission.submissionId] = submission
+        })
+      }
+      
+      // Enrich assignment data with user and submission objects
+      assignments.value = response.data.map(assignment => ({
+        ...assignment,
+        user: usersMap[assignment.userId] || null,
+        submission: submissionsMap[assignment.submissionId] || null
+      }))
     }
   } catch (error) {
     ElMessage.error('加载评审列表失败')

@@ -105,11 +105,11 @@ export const submissionAPI = {
   updateSubmission(id, data) {
     return api.put(`/submissions/${id}`, data)
   },
-  submitSubmission(id) {
-    return api.post(`/submissions/${id}/submit`)
+  submitSubmission(id, userId) {
+    return api.post(`/submissions/${id}/submit`, { userId })
   },
-  lockSubmission(id) {
-    return api.post(`/submissions/${id}/lock`)
+  lockSubmission(id, userId) {
+    return api.post(`/submissions/${id}/lock`, { userId })
   },
   getSubmissionsByRegistration(registrationId) {
     return api.get(`/submissions/registration/${registrationId}`)
@@ -137,6 +137,9 @@ export const judgeAPI = {
   },
   randomAssignJudges(judgesPerSubmission) {
     return api.post('/judge/assignments/random', { judgesPerSubmission })
+  },
+  confirmReview(userId, submissionId) {
+    return api.post('/judge/assignments/confirm', { userId, submissionId })
   }
 }
 
@@ -206,7 +209,31 @@ export const teamAPI = {
   transferCaptain(teamId, userId) {
     return api.post(`/teams/${teamId}/transfer-captain`, { userId })
   },
+  updateMemberRole(teamId, userId, role) {
+    return api.post(`/teams/${teamId}/update-member-role`, { userId, role })
+  },
   searchUsers(query) {
     return api.get('/teams/search-users', { params: { query } })
+  }
+}
+
+export const notificationAPI = {
+  getUserNotifications(userId) {
+    return api.get(`/notifications/user/${userId}`)
+  },
+  getUnreadNotifications(userId) {
+    return api.get(`/notifications/user/${userId}/unread`)
+  },
+  getUnreadCount(userId) {
+    return api.get(`/notifications/user/${userId}/unread-count`)
+  },
+  markAsRead(notificationId) {
+    return api.post(`/notifications/${notificationId}/read`)
+  },
+  markAllAsRead(userId) {
+    return api.post(`/notifications/user/${userId}/read-all`)
+  },
+  deleteNotification(notificationId) {
+    return api.delete(`/notifications/${notificationId}`)
   }
 }
