@@ -1,6 +1,7 @@
 package com.competition.controller;
 
 import com.competition.dto.ApiResponse;
+import com.competition.dto.RegistrationWithCompetitionDTO;
 import com.competition.entity.Registration;
 import com.competition.service.RegistrationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,8 +62,8 @@ public class RegistrationController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<ApiResponse<List<Registration>>> getRegistrationsByUser(@PathVariable Integer userId) {
-        List<Registration> registrations = registrationService.getRegistrationsByUser(userId);
+    public ResponseEntity<ApiResponse<List<RegistrationWithCompetitionDTO>>> getRegistrationsByUser(@PathVariable Integer userId) {
+        List<RegistrationWithCompetitionDTO> registrations = registrationService.getRegistrationsByUser(userId);
         return ResponseEntity.ok(ApiResponse.success(registrations));
     }
 }
