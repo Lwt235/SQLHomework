@@ -26,29 +26,30 @@ public class NotificationService {
         notification.setContent(content);
         notification.setRelatedId(relatedId);
         notification.setRead(false);
+        notification.setDeleted(false);
         
         return notificationRepository.save(notification);
     }
     
     /**
-     * Get all notifications for a user
+     * Get all non-deleted notifications for a user
      */
     public List<Notification> getUserNotifications(Integer userId) {
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        return notificationRepository.findByUserIdAndDeletedOrderByCreatedAtDesc(userId, false);
     }
     
     /**
-     * Get unread notifications for a user
+     * Get unread non-deleted notifications for a user
      */
     public List<Notification> getUnreadNotifications(Integer userId) {
-        return notificationRepository.findByUserIdAndReadOrderByCreatedAtDesc(userId, false);
+        return notificationRepository.findByUserIdAndReadAndDeletedOrderByCreatedAtDesc(userId, false, false);
     }
     
     /**
-     * Get unread notification count
+     * Get unread notification count (excluding deleted)
      */
     public long getUnreadCount(Integer userId) {
-        return notificationRepository.countByUserIdAndRead(userId, false);
+        return notificationRepository.countByUserIdAndReadAndDeleted(userId, false, false);
     }
     
     /**
@@ -72,10 +73,21 @@ public class NotificationService {
     }
     
     /**
-     * Delete a notification
+     * Soft delete a notification
      */
     @Transactional
     public void deleteNotification(Integer notificationId) {
-        notificationRepository.deleteById(notificationId);
+        notificationRepository.softDeleteById(notificationId);
+    }
+    
+    /**
+     * Batch soft delete notifications
+     */
+    @Transactional
+    public void batchDeleteNotifications(List<Integer> notificationIds) {
+        if (notificationIds == null || notificationIds.isEmpty()) {
+            throw new RuntimeException("通知ID列表不能为空");
+        }
+        notificationRepository.softDeleteByIds(notificationIds);
     }
 }

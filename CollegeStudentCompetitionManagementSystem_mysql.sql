@@ -143,6 +143,8 @@ create table Notification
    is_read              bool not null default 0,
    related_id           int,
    created_at           datetime not null,
+   updated_at           datetime not null,
+   is_deleted           bool not null default 0,
    primary key (notification_id)
 );
 

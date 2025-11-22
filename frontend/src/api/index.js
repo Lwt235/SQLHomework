@@ -235,5 +235,8 @@ export const notificationAPI = {
   },
   deleteNotification(notificationId) {
     return api.delete(`/notifications/${notificationId}`)
+  },
+  batchDeleteNotifications(notificationIds) {
+    return api.delete('/notifications/batch', { data: { notificationIds } })
   }
 }
