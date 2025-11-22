@@ -2,13 +2,19 @@
   <div class="admin-judges">
     <el-card>
       <template #header>
-        <span>评审管理</span>
+        <div class="card-header">
+          <span>评审管理</span>
+          <div>
+            <el-button type="primary" @click="showManualAssignDialog = true">手动分配评审</el-button>
+            <el-button type="success" @click="showRandomAssignDialog = true">一键随机分配</el-button>
+          </div>
+        </div>
       </template>
 
       <el-table :data="assignments" v-loading="loading" style="width: 100%">
         <el-table-column label="评委" width="120">
           <template #default="{ row }">
-            {{ row.user?.realName || '-' }}
+            {{ row.user?.realName || row.user?.username || '-' }}
           </template>
         </el-table-column>
         <el-table-column label="作品" min-width="200">
@@ -16,6 +22,7 @@
             {{ row.submission?.submissionTitle || '-' }}
           </template>
         </el-table-column>
+        <el-table-column prop="weight" label="权重" width="100" />
         <el-table-column prop="score" label="评分" width="100" />
         <el-table-column prop="comment" label="评语" min-width="200" />
         <el-table-column label="操作" width="150">
@@ -25,16 +32,108 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <!-- Manual Assignment Dialog -->
+    <el-dialog v-model="showManualAssignDialog" title="手动分配评审" width="600px">
+      <el-form :model="manualAssignForm" label-width="120px">
+        <el-form-item label="选择作品">
+          <el-select 
+            v-model="manualAssignForm.submissionId" 
+            placeholder="请选择已锁定的作品"
+            filterable
+            style="width: 100%"
+          >
+            <el-option 
+              v-for="submission in lockedSubmissions" 
+              :key="submission.submissionId" 
+              :label="submission.submissionTitle" 
+              :value="submission.submissionId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="选择评审教师">
+          <el-select 
+            v-model="manualAssignForm.judgeUserId" 
+            placeholder="请选择教师"
+            filterable
+            style="width: 100%"
+          >
+            <el-option 
+              v-for="teacher in teachers" 
+              :key="teacher.userId" 
+              :label="`${teacher.realName || teacher.username} (ID: ${teacher.userId})`" 
+              :value="teacher.userId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="权重">
+          <el-input-number 
+            v-model="manualAssignForm.weight" 
+            :min="0" 
+            :max="1" 
+            :step="0.1" 
+            :precision="2"
+            placeholder="评审权重"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showManualAssignDialog = false">取消</el-button>
+        <el-button type="primary" @click="submitManualAssign" :loading="assigning">确定分配</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Random Assignment Dialog -->
+    <el-dialog v-model="showRandomAssignDialog" title="一键随机分配" width="600px">
+      <el-alert 
+        title="随机分配说明" 
+        type="info" 
+        :closable="false"
+        style="margin-bottom: 20px"
+      >
+        <p>系统将为所有已锁定的作品随机分配指定数量的评审教师</p>
+        <p>如果作品已有部分评审，将自动补齐至指定数量</p>
+      </el-alert>
+      <el-form label-width="150px">
+        <el-form-item label="每个作品评审数量">
+          <el-input-number 
+            v-model="randomAssignForm.judgesPerSubmission" 
+            :min="1" 
+            :max="10"
+            placeholder="评审数量"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showRandomAssignDialog = false">取消</el-button>
+        <el-button type="success" @click="submitRandomAssign" :loading="assigning">开始分配</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { judgeAPI } from '../../api'
+import { judgeAPI, submissionAPI, userAPI } from '../../api'
 import { ElMessage } from 'element-plus'
 
 const assignments = ref([])
 const loading = ref(false)
+const showManualAssignDialog = ref(false)
+const showRandomAssignDialog = ref(false)
+const assigning = ref(false)
+const lockedSubmissions = ref([])
+const teachers = ref([])
+
+const manualAssignForm = ref({
+  submissionId: null,
+  judgeUserId: null,
+  weight: 1.0
+})
+
+const randomAssignForm = ref({
+  judgesPerSubmission: 3
+})
 
 const loadAssignments = async () => {
   loading.value = true
@@ -50,17 +149,115 @@ const loadAssignments = async () => {
   }
 }
 
+const loadLockedSubmissions = async () => {
+  try {
+    const response = await submissionAPI.getAllSubmissions()
+    if (response.success) {
+      lockedSubmissions.value = response.data.filter(s => s.submissionStatus === 'locked')
+    }
+  } catch (error) {
+    console.error('加载作品列表失败', error)
+  }
+}
+
+const loadTeachers = async () => {
+  try {
+    const response = await userAPI.getAllUsers()
+    if (response.success) {
+      // Filter to only include teachers
+      // Note: This makes N+1 API calls. In production, consider creating a 
+      // dedicated backend endpoint that returns users with their roles in a single call
+      const allRolesResponse = await userAPI.getAllRoles()
+      const teacherRole = allRolesResponse.data.find(r => r.roleCode === 'TEACHER')
+      
+      if (teacherRole) {
+        const teacherUserIds = []
+        for (const user of response.data) {
+          const rolesResponse = await userAPI.getUserRoles(user.userId)
+          if (rolesResponse.success && rolesResponse.data.some(r => r.roleCode === 'TEACHER')) {
+            teacherUserIds.push(user.userId)
+          }
+        }
+        teachers.value = response.data.filter(u => teacherUserIds.includes(u.userId))
+      }
+    }
+  } catch (error) {
+    console.error('加载教师列表失败', error)
+  }
+}
+
+const submitManualAssign = async () => {
+  if (!manualAssignForm.value.submissionId || !manualAssignForm.value.judgeUserId) {
+    ElMessage.error('请选择作品和评审教师')
+    return
+  }
+  
+  assigning.value = true
+  try {
+    const response = await judgeAPI.manualAssignJudge({
+      submissionId: manualAssignForm.value.submissionId,
+      judgeUserId: manualAssignForm.value.judgeUserId,
+      weight: manualAssignForm.value.weight
+    })
+    
+    if (response.success) {
+      ElMessage.success('评审分配成功')
+      showManualAssignDialog.value = false
+      manualAssignForm.value = { submissionId: null, judgeUserId: null, weight: 1.0 }
+      await loadAssignments()
+    } else {
+      ElMessage.error(response.message || '评审分配失败')
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '评审分配失败')
+  } finally {
+    assigning.value = false
+  }
+}
+
+const submitRandomAssign = async () => {
+  if (!randomAssignForm.value.judgesPerSubmission || randomAssignForm.value.judgesPerSubmission <= 0) {
+    ElMessage.error('请输入有效的评审数量')
+    return
+  }
+  
+  assigning.value = true
+  try {
+    const response = await judgeAPI.randomAssignJudges(randomAssignForm.value.judgesPerSubmission)
+    
+    if (response.success) {
+      ElMessage.success(response.message || '随机分配成功')
+      showRandomAssignDialog.value = false
+      await loadAssignments()
+    } else {
+      ElMessage.error(response.message || '随机分配失败')
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '随机分配失败')
+  } finally {
+    assigning.value = false
+  }
+}
+
 const viewDetail = (assignment) => {
   ElMessage.info('查看详情功能开发中')
 }
 
-onMounted(() => {
-  loadAssignments()
+onMounted(async () => {
+  await loadAssignments()
+  await loadLockedSubmissions()
+  await loadTeachers()
 })
 </script>
 
 <style scoped>
 .admin-judges {
   padding: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>

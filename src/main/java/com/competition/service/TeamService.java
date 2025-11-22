@@ -3,9 +3,13 @@ package com.competition.service;
 import com.competition.entity.Team;
 import com.competition.entity.TeamMember;
 import com.competition.entity.User;
+import com.competition.entity.UserRole;
+import com.competition.entity.Role;
 import com.competition.repository.TeamRepository;
 import com.competition.repository.TeamMemberRepository;
 import com.competition.repository.UserRepository;
+import com.competition.repository.UserRoleRepository;
+import com.competition.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +29,12 @@ public class TeamService {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+    
+    @Autowired
+    private RoleRepository roleRepository;
     
     public List<Team> getAllTeams() {
         return teamRepository.findAll().stream()
@@ -233,7 +243,29 @@ public class TeamService {
             return java.util.Collections.emptyList();
         }
         
-        return userRepository.searchByNicknameOrUsername(query.trim());
+        // Search by username or ID
+        List<User> users = userRepository.searchByUsernameOrId(query.trim());
+        
+        // Filter to only include students
+        return users.stream()
+                .filter(user -> hasStudentRole(user.getUserId()))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Check if user has STUDENT role
+     */
+    private boolean hasStudentRole(Integer userId) {
+        List<UserRole> userRoles = userRoleRepository.findByUserId(userId);
+        
+        for (UserRole userRole : userRoles) {
+            Role role = roleRepository.findById(userRole.getRoleId()).orElse(null);
+            if (role != null && "STUDENT".equalsIgnoreCase(role.getRoleCode())) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     public List<Team> getTeamsByUserIdAndRole(Integer userId, String role) {

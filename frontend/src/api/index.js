@@ -131,6 +131,12 @@ export const judgeAPI = {
   },
   getAssignmentsBySubmission(submissionId) {
     return api.get(`/judge/assignments/submission/${submissionId}`)
+  },
+  manualAssignJudge(data) {
+    return api.post('/judge/assignments/manual', data)
+  },
+  randomAssignJudges(judgesPerSubmission) {
+    return api.post('/judge/assignments/random', { judgesPerSubmission })
   }
 }
 

@@ -139,12 +139,15 @@
   <!-- Edit Profile Dialog -->
   <el-dialog v-model="editDialogVisible" title="修改个人信息" width="600px">
     <el-alert 
-      title="提示：用户名(昵称)是登录凭证，不可修改" 
+      title="提示：修改用户名前请确保新用户名未被占用" 
       type="info" 
       :closable="false"
       style="margin-bottom: 20px"
     />
     <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="100px">
+      <el-form-item label="用户名" prop="username">
+        <el-input v-model="editForm.username" placeholder="请输入用户名" />
+      </el-form-item>
       <el-form-item label="真实姓名" prop="realName">
         <el-input v-model="editForm.realName" placeholder="请输入真实姓名（可选）" />
       </el-form-item>
@@ -190,6 +193,7 @@ const submitting = ref(false)
 const editFormRef = ref(null)
 
 const editForm = ref({
+  username: '',
   realName: '',
   email: '',
   phone: '',
@@ -199,6 +203,9 @@ const editForm = ref({
 })
 
 const editRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' }
+  ],
   email: [
     { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
   ]
@@ -218,6 +225,7 @@ const loadUserDetails = async () => {
 const showEditDialog = () => {
   if (userDetails.value) {
     editForm.value = {
+      username: userDetails.value.username || '',
       realName: userDetails.value.realName || '',
       email: userDetails.value.email || '',
       phone: userDetails.value.phone || '',

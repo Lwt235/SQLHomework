@@ -55,8 +55,21 @@
             <el-button type="primary" size="small" @click="viewDetail(row.competitionId)">
               查看详情
             </el-button>
-            <el-button v-if="authStore.isStudent && canApply(row)" type="success" size="small" @click="navigateToApply(row.competitionId)">
+            <el-button 
+              v-if="authStore.isStudent && canApply(row)" 
+              type="success" 
+              size="small" 
+              @click="navigateToApply(row.competitionId)"
+            >
               报名
+            </el-button>
+            <el-button 
+              v-if="authStore.isStudent && isOngoing(row)" 
+              type="warning" 
+              size="small" 
+              @click="navigateToSubmit(row.competitionId)"
+            >
+              提交作品
             </el-button>
           </template>
         </el-table-column>
@@ -105,7 +118,11 @@ const canApply = (competition) => {
   const signupStart = new Date(competition.signupStart)
   const signupEnd = new Date(competition.signupEnd)
   return now >= signupStart && now <= signupEnd && 
-         (competition.competitionStatus === 'published' || competition.competitionStatus === 'ongoing')
+         competition.competitionStatus === 'published'
+}
+
+const isOngoing = (competition) => {
+  return competition.competitionStatus === 'ongoing'
 }
 
 const viewDetail = (id) => {
@@ -117,6 +134,10 @@ const navigateToApply = (competitionId) => {
     name: 'ApplyCompetition',
     query: { competitionId }
   })
+}
+
+const navigateToSubmit = (competitionId) => {
+  router.push('/my-submissions')
 }
 
 onMounted(() => {

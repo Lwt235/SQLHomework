@@ -25,7 +25,13 @@
         </el-table-column>
         <el-table-column label="操作" width="250">
           <template #default="{ row }">
-            <el-button size="small" @click="editSubmission(row)">编辑</el-button>
+            <el-button 
+              size="small" 
+              @click="editSubmission(row)"
+              :disabled="row.finalLockedAt != null"
+            >
+              编辑
+            </el-button>
             <el-button 
               v-if="row.submissionStatus === 'draft'" 
               type="primary" 
@@ -35,13 +41,14 @@
               提交作品
             </el-button>
             <el-button 
-              v-if="row.submissionStatus === 'submitted'" 
+              v-if="row.submissionStatus === 'submitted' && row.finalLockedAt == null" 
               type="warning" 
               size="small" 
               @click="lockWork(row.submissionId)"
             >
               最终锁定
             </el-button>
+            <el-tag v-if="row.finalLockedAt != null" type="danger" size="small">已锁定</el-tag>
           </template>
         </el-table-column>
       </el-table>
