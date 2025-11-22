@@ -135,7 +135,7 @@ create table JudgeAssignment
 /*==============================================================*/
 create table Notification
 (
-   notification_id      int not null,
+   notification_id      int not null auto_increment,
    user_id              int not null,
    notification_type    varchar(50) not null,
    title                varchar(255) not null,

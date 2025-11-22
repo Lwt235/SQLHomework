@@ -68,11 +68,7 @@ public class NotificationService {
      */
     @Transactional
     public void markAllAsRead(Integer userId) {
-        List<Notification> unreadNotifications = getUnreadNotifications(userId);
-        for (Notification notification : unreadNotifications) {
-            notification.setRead(true);
-            notificationRepository.save(notification);
-        }
+        notificationRepository.markAllAsReadByUserId(userId);
     }
     
     /**

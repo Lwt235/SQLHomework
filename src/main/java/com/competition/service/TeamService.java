@@ -21,6 +21,11 @@ import java.util.stream.Collectors;
 @Service
 public class TeamService {
     
+    // Role constants
+    public static final String ROLE_LEADER = "leader";
+    public static final String ROLE_VICE_LEADER = "vice-leader";
+    public static final String ROLE_MEMBER = "member";
+    
     @Autowired
     private TeamRepository teamRepository;
     
@@ -87,7 +92,7 @@ public class TeamService {
         TeamMember leaderMember = new TeamMember();
         leaderMember.setTeamId(savedTeam.getTeamId());
         leaderMember.setUserId(creatorUserId);
-        leaderMember.setRoleInTeam("leader");
+        leaderMember.setRoleInTeam(ROLE_LEADER);
         teamMemberRepository.save(leaderMember);
         
         return savedTeam;
@@ -143,7 +148,7 @@ public class TeamService {
         TeamMember teamMember = new TeamMember();
         teamMember.setTeamId(teamId);
         teamMember.setUserId(userId);
-        teamMember.setRoleInTeam(roleInTeam != null ? roleInTeam : "member");
+        teamMember.setRoleInTeam(roleInTeam != null ? roleInTeam : ROLE_MEMBER);
         teamMemberRepository.save(teamMember);
     }
     
@@ -159,7 +164,7 @@ public class TeamService {
                 .orElseThrow(() -> new RuntimeException("成员不存在"));
         
         // Don't allow removing the leader if there are other members
-        if ("leader".equals(member.getRoleInTeam())) {
+        if (ROLE_LEADER.equals(member.getRoleInTeam())) {
             List<TeamMember> members = teamMemberRepository.findByTeamId(teamId);
             if (members.size() > 1) {
                 throw new RuntimeException("团队队长不能在有其他成员时退出，请先转让队长或解散团队");
@@ -218,7 +223,7 @@ public class TeamService {
         TeamMember currentCaptain = teamMemberRepository.findById(currentCaptainId)
                 .orElseThrow(() -> new RuntimeException("当前用户不是团队成员"));
         
-        if (!"leader".equals(currentCaptain.getRoleInTeam())) {
+        if (!ROLE_LEADER.equals(currentCaptain.getRoleInTeam())) {
             throw new RuntimeException("只有队长才能转让队长身份");
         }
         
@@ -231,8 +236,8 @@ public class TeamService {
                 .orElseThrow(() -> new RuntimeException("目标用户不是团队成员"));
         
         // Transfer captain role
-        currentCaptain.setRoleInTeam("member");
-        newCaptain.setRoleInTeam("leader");
+        currentCaptain.setRoleInTeam(ROLE_MEMBER);
+        newCaptain.setRoleInTeam(ROLE_LEADER);
         
         teamMemberRepository.save(currentCaptain);
         teamMemberRepository.save(newCaptain);
@@ -254,7 +259,7 @@ public class TeamService {
         TeamMember operator = teamMemberRepository.findById(operatorId)
                 .orElseThrow(() -> new RuntimeException("您不是团队成员"));
         
-        if (!"leader".equals(operator.getRoleInTeam())) {
+        if (!ROLE_LEADER.equals(operator.getRoleInTeam())) {
             throw new RuntimeException("只有队长才能修改成员角色");
         }
         
@@ -267,13 +272,13 @@ public class TeamService {
                 .orElseThrow(() -> new RuntimeException("目标用户不是团队成员"));
         
         // Validate new role
-        if (!newRole.equals("leader") && !newRole.equals("vice-leader") && !newRole.equals("member")) {
+        if (!newRole.equals(ROLE_LEADER) && !newRole.equals(ROLE_VICE_LEADER) && !newRole.equals(ROLE_MEMBER)) {
             throw new RuntimeException("无效的角色类型");
         }
         
         // If promoting to leader, demote current leader
-        if ("leader".equals(newRole)) {
-            operator.setRoleInTeam("member");
+        if (ROLE_LEADER.equals(newRole)) {
+            operator.setRoleInTeam(ROLE_MEMBER);
             teamMemberRepository.save(operator);
         }
         

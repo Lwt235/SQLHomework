@@ -152,24 +152,29 @@ const loadApprovedRegistrations = async () => {
   try {
     const response = await registrationAPI.getRegistrationsByUser(authStore.user.userId)
     if (response.success) {
-      // Filter approved registrations without locked submissions
+      // Filter approved registrations
       const approvedRegs = response.data.filter(r => r.registrationStatus === 'approved')
       
-      // For each registration, check if it has a locked submission
-      const regsWithoutLocked = []
-      for (const reg of approvedRegs) {
-        const submissionsRes = await submissionAPI.getSubmissionsByRegistration(reg.registrationId)
-        if (submissionsRes.success) {
-          const hasLocked = submissionsRes.data.some(s => s.finalLockedAt != null || s.submissionStatus === 'locked')
-          if (!hasLocked) {
-            regsWithoutLocked.push(reg)
+      // For each registration, check if it has a locked submission - use Promise.all for concurrent requests
+      const submissionChecks = await Promise.all(
+        approvedRegs.map(async (reg) => {
+          try {
+            const submissionsRes = await submissionAPI.getSubmissionsByRegistration(reg.registrationId)
+            if (submissionsRes.success) {
+              const hasLocked = submissionsRes.data.some(s => s.finalLockedAt != null || s.submissionStatus === 'locked')
+              return { reg, hasLocked }
+            }
+            return { reg, hasLocked: false }
+          } catch (error) {
+            return { reg, hasLocked: false }
           }
-        } else {
-          regsWithoutLocked.push(reg)
-        }
-      }
+        })
+      )
       
-      approvedRegistrations.value = regsWithoutLocked
+      // Filter out registrations with locked submissions
+      approvedRegistrations.value = submissionChecks
+        .filter(({ hasLocked }) => !hasLocked)
+        .map(({ reg }) => reg)
     }
   } catch (error) {
     console.error('加载报名列表失败', error)
