@@ -15,6 +15,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
     List<Notification> findByUserIdAndReadOrderByCreatedAtDesc(Integer userId, Boolean read);
     long countByUserIdAndRead(Integer userId, Boolean read);
     
+    /**
+     * Bulk update to mark all unread notifications as read for a user.
+     * Note: This method must be called within a transactional context (e.g., from NotificationService).
+     */
     @Modifying
     @Query("UPDATE Notification n SET n.read = true WHERE n.userId = :userId AND n.read = false")
     int markAllAsReadByUserId(@Param("userId") Integer userId);

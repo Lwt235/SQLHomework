@@ -278,8 +278,14 @@ public class TeamService {
         
         // If promoting to leader, demote current leader
         if (ROLE_LEADER.equals(newRole)) {
-            operator.setRoleInTeam(ROLE_MEMBER);
-            teamMemberRepository.save(operator);
+            // Find current leader(s) and demote them to member
+            List<TeamMember> allMembers = teamMemberRepository.findByTeamId(teamId);
+            for (TeamMember member : allMembers) {
+                if (ROLE_LEADER.equals(member.getRoleInTeam()) && !member.getUserId().equals(targetUserId)) {
+                    member.setRoleInTeam(ROLE_MEMBER);
+                    teamMemberRepository.save(member);
+                }
+            }
         }
         
         // Update target member role
