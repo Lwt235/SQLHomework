@@ -16,6 +16,7 @@
             <el-tag v-if="row.submissionStatus === 'draft'" type="info">草稿</el-tag>
             <el-tag v-else-if="row.submissionStatus === 'submitted'" type="success">已提交</el-tag>
             <el-tag v-else-if="row.submissionStatus === 'locked'" type="warning">已锁定</el-tag>
+            <el-tag v-else-if="row.submissionStatus === 'invalid'" type="danger">无效</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180">
@@ -151,7 +152,29 @@ const loadApprovedRegistrations = async () => {
   try {
     const response = await registrationAPI.getRegistrationsByUser(authStore.user.userId)
     if (response.success) {
-      approvedRegistrations.value = response.data.filter(r => r.registrationStatus === 'approved')
+      // Filter approved registrations
+      const approvedRegs = response.data.filter(r => r.registrationStatus === 'approved')
+      
+      // For each registration, check if it has a locked submission - use Promise.all for concurrent requests
+      const submissionChecks = await Promise.all(
+        approvedRegs.map(async (reg) => {
+          try {
+            const submissionsRes = await submissionAPI.getSubmissionsByRegistration(reg.registrationId)
+            if (submissionsRes.success) {
+              const hasLocked = submissionsRes.data.some(s => s.finalLockedAt != null || s.submissionStatus === 'locked')
+              return { reg, hasLocked }
+            }
+            return { reg, hasLocked: false }
+          } catch (error) {
+            return { reg, hasLocked: false }
+          }
+        })
+      )
+      
+      // Filter out registrations with locked submissions
+      approvedRegistrations.value = submissionChecks
+        .filter(({ hasLocked }) => !hasLocked)
+        .map(({ reg }) => reg)
     }
   } catch (error) {
     console.error('加载报名列表失败', error)
@@ -164,11 +187,12 @@ const createSubmission = async () => {
     if (response.success) {
       ElMessage.success('作品创建成功')
       showCreateDialog.value = false
-      loadSubmissions()
+      await loadApprovedRegistrations()
+      await loadSubmissions()
       newSubmission.value = { registrationId: null, submissionTitle: '', abstractText: '' }
     }
   } catch (error) {
-    ElMessage.error('创建作品失败')
+    ElMessage.error(error.response?.data?.message || '创建作品失败')
   }
 }
 
@@ -194,7 +218,7 @@ const updateSubmission = async () => {
       editingSubmission.value = null
     }
   } catch (error) {
-    ElMessage.error('更新作品失败')
+    ElMessage.error(error.response?.data?.message || '更新作品失败')
   }
 }
 
@@ -206,7 +230,7 @@ const submitWork = async (id) => {
       loadSubmissions()
     }
   } catch (error) {
-    ElMessage.error('提交作品失败')
+    ElMessage.error(error.response?.data?.message || '提交作品失败')
   }
 }
 
@@ -215,10 +239,11 @@ const lockWork = async (id) => {
     const response = await submissionAPI.lockSubmission(id)
     if (response.success) {
       ElMessage.success('作品已最终锁定')
-      loadSubmissions()
+      await loadApprovedRegistrations()
+      await loadSubmissions()
     }
   } catch (error) {
-    ElMessage.error('锁定作品失败')
+    ElMessage.error(error.response?.data?.message || '锁定作品失败')
   }
 }
 

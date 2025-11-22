@@ -219,4 +219,28 @@ public class JudgeService {
         
         return false;
     }
+    
+    /**
+     * Confirm review completion - locks the score and comment
+     */
+    @Transactional
+    public JudgeAssignment confirmReview(Integer userId, Integer submissionId) {
+        JudgeAssignment.JudgeAssignmentId id = new JudgeAssignment.JudgeAssignmentId();
+        id.setUserId(userId);
+        id.setSubmissionId(submissionId);
+        
+        JudgeAssignment assignment = judgeAssignmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("评审任务不存在"));
+        
+        if ("completed".equals(assignment.getJudgeStatus())) {
+            throw new RuntimeException("该评审已经确认完成，无法重复确认");
+        }
+        
+        if (assignment.getScore() == null) {
+            throw new RuntimeException("请先完成评分后再确认");
+        }
+        
+        assignment.setJudgeStatus("completed");
+        return judgeAssignmentRepository.save(assignment);
+    }
 }

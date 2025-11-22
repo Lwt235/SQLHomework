@@ -144,6 +144,14 @@
             <el-table-column label="操作" v-if="isTeamLeader(selectedTeam)">
               <template #default="{ row }">
                 <el-space>
+                  <el-button 
+                    v-if="row.roleInTeam !== 'leader' && !row.isCurrentUser"
+                    type="primary" 
+                    size="small" 
+                    @click="showRoleDialog(row)"
+                  >
+                    修改角色
+                  </el-button>
                   <el-popconfirm
                     v-if="row.roleInTeam !== 'leader'"
                     title="确定移除该成员吗？"
@@ -153,14 +161,6 @@
                       <el-button type="danger" size="small">移除</el-button>
                     </template>
                   </el-popconfirm>
-                  <el-button 
-                    v-if="row.roleInTeam !== 'leader' && !row.isCurrentUser"
-                    type="primary" 
-                    size="small" 
-                    @click="showTransferDialog(row)"
-                  >
-                    转让队长
-                  </el-button>
                 </el-space>
               </template>
             </el-table-column>
@@ -213,7 +213,44 @@
       </template>
     </el-dialog>
 
-    <!-- Transfer Captain Dialog -->
+    <!-- Role Management Dialog -->
+    <el-dialog v-model="roleDialogVisible" title="修改成员角色" width="500px">
+      <div v-if="roleTarget">
+        <p><strong>成员：</strong>{{ roleTarget.username }} (ID: {{ roleTarget.userId }})</p>
+        <p><strong>当前角色：</strong>
+          <el-tag v-if="roleTarget.roleInTeam === 'leader'" type="warning">队长</el-tag>
+          <el-tag v-else-if="roleTarget.roleInTeam === 'vice-leader'" type="success">副队长</el-tag>
+          <el-tag v-else>成员</el-tag>
+        </p>
+        <el-divider />
+        <el-form label-width="100px">
+          <el-form-item label="新角色">
+            <el-radio-group v-model="newRole">
+              <el-radio label="member">成员</el-radio>
+              <el-radio label="vice-leader">副队长</el-radio>
+              <el-radio label="leader">队长</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+        <el-alert 
+          v-if="newRole === 'leader'"
+          title="将此成员提升为队长后，您将自动成为普通成员" 
+          type="warning" 
+          :closable="false"
+          style="margin-top: 10px"
+        />
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="roleDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmUpdateRole" :loading="submitting">
+            确认修改
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- Transfer Captain Dialog (kept for backward compatibility) -->
     <el-dialog v-model="transferDialogVisible" title="转让队长" width="500px">
       <el-alert 
         title="转让队长后，您将成为普通成员，新队长将拥有管理团队的权限" 
@@ -251,6 +288,7 @@ const teamDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
 const addMemberDialogVisible = ref(false)
 const transferDialogVisible = ref(false)
+const roleDialogVisible = ref(false)
 const isEditing = ref(false)
 const selectedTeam = ref(null)
 const teamFormRef = ref(null)
@@ -259,6 +297,8 @@ const teamMembers = ref({}) // Map of teamId -> members array
 const currentTeamMembers = ref([])
 const searchResults = ref([])
 const transferTarget = ref(null)
+const roleTarget = ref(null)
+const newRole = ref('member')
 const searchDebounceTimer = ref(null)
 
 const teamForm = ref({
@@ -503,6 +543,36 @@ const showTransferDialog = (member) => {
   transferDialogVisible.value = true
 }
 
+const showRoleDialog = (member) => {
+  roleTarget.value = member
+  newRole.value = member.roleInTeam
+  roleDialogVisible.value = true
+}
+
+const confirmUpdateRole = async () => {
+  if (!roleTarget.value || !newRole.value) return
+  
+  submitting.value = true
+  try {
+    const response = await teamAPI.updateMemberRole(
+      selectedTeam.value.teamId, 
+      roleTarget.value.userId, 
+      newRole.value
+    )
+    if (response.success) {
+      ElMessage.success('成员角色更新成功')
+      roleDialogVisible.value = false
+      await loadTeamMembers(selectedTeam.value.teamId)
+      await loadTeamMembersWithDetails(selectedTeam.value.teamId)
+      await loadTeams() // Reload to update role tags
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '角色更新失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
 const confirmTransferCaptain = async () => {
   if (!transferTarget.value) return
   
@@ -517,7 +587,7 @@ const confirmTransferCaptain = async () => {
       await loadTeams() // Reload to update role tags
     }
   } catch (error) {
-    ElMessage.error(error.message || '队长移交失败')
+    ElMessage.error(error.response?.data?.message || '队长移交失败')
   } finally {
     submitting.value = false
   }

@@ -69,8 +69,8 @@ public class RegistrationService {
             throw new RuntimeException("报名已结束");
         }
         
-        // Validate user exists and is active
-        if (registration.getUserId() != null) {
+        // Individual registration
+        if (registration.getUserId() != null && registration.getTeamId() == null) {
             User user = userRepository.findById(registration.getUserId())
                     .orElseThrow(() -> new RuntimeException("用户不存在"));
             
@@ -97,20 +97,62 @@ public class RegistrationService {
                 throw new RuntimeException("只有学生账号可以报名参赛");
             }
             
-            // Check if user already registered for this competition
-            List<Registration> existingRegistrations = registrationRepository
-                    .findByCompetitionId(registration.getCompetitionId())
-                    .stream()
-                    .filter(r -> !r.getDeleted() && r.getUserId() != null && r.getUserId().equals(registration.getUserId()))
-                    .collect(Collectors.toList());
+            // Check if user already registered for this competition (individual or team)
+            if (hasUserRegisteredForCompetition(registration.getUserId(), registration.getCompetitionId())) {
+                throw new RuntimeException("您已经报名了该比赛（个人或团队）");
+            }
+        }
+        
+        // Team registration
+        if (registration.getTeamId() != null) {
+            // Get all team members
+            List<TeamMember> teamMembers = teamMemberRepository.findByTeamId(registration.getTeamId());
+            if (teamMembers.isEmpty()) {
+                throw new RuntimeException("团队没有成员，无法报名");
+            }
             
-            if (!existingRegistrations.isEmpty()) {
-                throw new RuntimeException("您已经报名了该比赛");
+            // Check if any team member has already registered for this competition
+            for (TeamMember member : teamMembers) {
+                if (hasUserRegisteredForCompetition(member.getUserId(), registration.getCompetitionId())) {
+                    User user = userRepository.findById(member.getUserId()).orElse(null);
+                    String username = user != null ? user.getUsername() : "ID:" + member.getUserId();
+                    throw new RuntimeException("团队成员 " + username + " 已经报名了该比赛（个人或其他团队），无法重复报名");
+                }
             }
         }
         
         registration.setRegistrationStatus("pending");
         return registrationRepository.save(registration);
+    }
+    
+    /**
+     * Check if a user has already registered for a competition (individual or as part of a team)
+     */
+    private boolean hasUserRegisteredForCompetition(Integer userId, Integer competitionId) {
+        // Check individual registrations
+        List<Registration> individualRegs = registrationRepository
+                .findByCompetitionId(competitionId)
+                .stream()
+                .filter(r -> !r.getDeleted() && r.getUserId() != null && r.getUserId().equals(userId))
+                .collect(Collectors.toList());
+        
+        if (!individualRegs.isEmpty()) {
+            return true;
+        }
+        
+        // Check team registrations
+        List<TeamMember> userTeams = teamMemberRepository.findByUserId(userId);
+        List<Integer> userTeamIds = userTeams.stream()
+                .map(TeamMember::getTeamId)
+                .collect(Collectors.toList());
+        
+        List<Registration> teamRegs = registrationRepository
+                .findByCompetitionId(competitionId)
+                .stream()
+                .filter(r -> !r.getDeleted() && r.getTeamId() != null && userTeamIds.contains(r.getTeamId()))
+                .collect(Collectors.toList());
+        
+        return !teamRegs.isEmpty();
     }
 
     public Registration updateRegistrationStatus(Integer id, String status, Integer auditUserId) {
