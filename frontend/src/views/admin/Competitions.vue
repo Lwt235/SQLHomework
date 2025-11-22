@@ -69,6 +69,22 @@
             <el-option label="已结束" value="finished" />
           </el-select>
         </el-form-item>
+        <el-form-item label="竞赛开始时间" prop="startDate">
+          <el-date-picker 
+            v-model="competitionForm.startDate" 
+            type="datetime" 
+            placeholder="选择竞赛开始时间"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="竞赛结束时间" prop="endDate">
+          <el-date-picker 
+            v-model="competitionForm.endDate" 
+            type="datetime" 
+            placeholder="选择竞赛结束时间"
+            style="width: 100%"
+          />
+        </el-form-item>
         <el-form-item label="报名开始时间" prop="signupStart">
           <el-date-picker 
             v-model="competitionForm.signupStart" 
@@ -133,6 +149,8 @@ const getInitialCompetitionForm = () => ({
   level: 'school',
   organizer: '',
   competitionStatus: 'draft',
+  startDate: null,
+  endDate: null,
   signupStart: null,
   signupEnd: null,
   submitStart: null,
@@ -229,6 +247,8 @@ const editCompetition = (competition) => {
     level: competition.level,
     organizer: competition.organizer,
     competitionStatus: competition.competitionStatus,
+    startDate: competition.startDate ? new Date(competition.startDate) : null,
+    endDate: competition.endDate ? new Date(competition.endDate) : null,
     signupStart: competition.signupStart ? new Date(competition.signupStart) : null,
     signupEnd: competition.signupEnd ? new Date(competition.signupEnd) : null,
     submitStart: competition.submitStart ? new Date(competition.submitStart) : null,

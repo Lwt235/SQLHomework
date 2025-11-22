@@ -30,13 +30,18 @@ public class UserController {
     private JwtTokenProvider jwtTokenProvider;
 
     /**
-     * Get all users (Admin only)
+     * Get all users (Admin only) with optional filtering and sorting
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
+    public ResponseEntity<ApiResponse<List<User>>> getAllUsers(
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String school,
+            @RequestParam(required = false) String roleCode,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortOrder) {
         try {
-            List<User> users = userService.getAllUsers();
+            List<User> users = userService.getAllUsersFiltered(username, school, roleCode, sortBy, sortOrder);
             return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully", users));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve users: " + e.getMessage()));

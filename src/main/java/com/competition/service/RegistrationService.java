@@ -1,5 +1,6 @@
 package com.competition.service;
 
+import com.competition.dto.RegistrationWithCompetitionDTO;
 import com.competition.entity.Registration;
 import com.competition.entity.Competition;
 import com.competition.entity.User;
@@ -170,7 +171,7 @@ public class RegistrationService {
         return registrationRepository.findByCompetitionId(competitionId);
     }
 
-    public List<Registration> getRegistrationsByUser(Integer userId) {
+    public List<RegistrationWithCompetitionDTO> getRegistrationsByUser(Integer userId) {
         // Get direct user registrations
         List<Registration> directRegistrations = registrationRepository.findByUserId(userId);
         
@@ -202,7 +203,14 @@ public class RegistrationService {
             }
         }
         
-        return allRegistrations;
+        // Map to DTOs with competition details
+        return allRegistrations.stream()
+                .map(reg -> {
+                    Competition competition = competitionRepository.findById(reg.getCompetitionId())
+                            .orElse(null);
+                    return RegistrationWithCompetitionDTO.from(reg, competition);
+                })
+                .collect(Collectors.toList());
     }
 
     public List<Registration> getRegistrationsByStatus(String status) {

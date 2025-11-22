@@ -13,8 +13,8 @@ export const authAPI = {
 }
 
 export const userAPI = {
-  getAllUsers() {
-    return api.get('/users')
+  getAllUsers(params) {
+    return api.get('/users', { params })
   },
   getInactiveUsers() {
     return api.get('/users/inactive')
@@ -135,8 +135,8 @@ export const judgeAPI = {
   manualAssignJudge(data) {
     return api.post('/judge/assignments/manual', data)
   },
-  randomAssignJudges(judgesPerSubmission) {
-    return api.post('/judge/assignments/random', { judgesPerSubmission })
+  randomAssignJudges(payload) {
+    return api.post('/judge/assignments/random', payload)
   },
   confirmReview(userId, submissionId) {
     return api.post('/judge/assignments/confirm', { userId, submissionId })
@@ -238,5 +238,23 @@ export const notificationAPI = {
   },
   batchDeleteNotifications(notificationIds) {
     return api.delete('/notifications/batch', { data: { notificationIds } })
+  }
+}
+
+export const systemTimeAPI = {
+  getCurrentTime() {
+    return api.get('/system/time/current')
+  },
+  enableTestMode() {
+    return api.post('/system/time/test-mode/enable')
+  },
+  disableTestMode() {
+    return api.post('/system/time/test-mode/disable')
+  },
+  setTestTime(testTime) {
+    return api.post('/system/time/test-mode/set', { testTime })
+  },
+  setTimeOffset(offsetSeconds) {
+    return api.post('/system/time/test-mode/offset', { offsetSeconds })
   }
 }

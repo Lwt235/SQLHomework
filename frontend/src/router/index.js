@@ -99,6 +99,11 @@ const routes = [
         path: 'awards',
         name: 'AdminAwards',
         component: () => import('../views/admin/Awards.vue')
+      },
+      {
+        path: 'system-time',
+        name: 'AdminSystemTime',
+        component: () => import('../views/admin/SystemTime.vue')
       }
     ]
   }

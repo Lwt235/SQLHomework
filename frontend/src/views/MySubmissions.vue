@@ -38,6 +38,8 @@
               type="primary" 
               size="small" 
               @click="submitWork(row.submissionId)"
+              :disabled="!isInSubmissionPeriod(row)"
+              :title="!isInSubmissionPeriod(row) ? '当前不在作品提交时间范围内' : ''"
             >
               提交作品
             </el-button>
@@ -137,8 +139,27 @@ const loadSubmissions = async () => {
   try {
     const response = await submissionAPI.getAllSubmissions()
     if (response.success) {
-      submissions.value = response.data.filter(s => 
-        approvedRegistrations.value.some(r => r.registrationId === s.registrationId)
+      // Get all registrations for current user (not just the filtered approvedRegistrations)
+      const userRegsResponse = await registrationAPI.getRegistrationsByUser(authStore.user.userId)
+      const userRegistrationIds = userRegsResponse.success 
+        ? userRegsResponse.data.filter(r => r.registrationStatus === 'approved').map(r => r.registrationId)
+        : []
+      
+      // Filter submissions by user's registrations
+      const userSubmissions = response.data.filter(s => 
+        userRegistrationIds.includes(s.registrationId)
+      )
+      
+      // Enrich with registration and competition data
+      submissions.value = await Promise.all(
+        userSubmissions.map(async (submission) => {
+          const registration = userRegsResponse.data.find(r => r.registrationId === submission.registrationId)
+          return {
+            ...submission,
+            registration: registration,
+            competition: registration?.competition
+          }
+        })
       )
     }
   } catch (error) {
@@ -146,6 +167,20 @@ const loadSubmissions = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// Check if submission is within time period
+const isInSubmissionPeriod = (submission) => {
+  if (!submission.competition) return true // Allow if competition not loaded
+  
+  const now = new Date()
+  const submitStart = submission.competition.submitStart ? new Date(submission.competition.submitStart) : null
+  const submitEnd = submission.competition.submitEnd ? new Date(submission.competition.submitEnd) : null
+  
+  if (submitStart && now < submitStart) return false
+  if (submitEnd && now > submitEnd) return false
+  
+  return true
 }
 
 const loadApprovedRegistrations = async () => {
