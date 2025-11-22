@@ -77,7 +77,10 @@ public class NotificationService {
      */
     @Transactional
     public void deleteNotification(Integer notificationId) {
-        notificationRepository.softDeleteById(notificationId);
+        int updated = notificationRepository.softDeleteById(notificationId);
+        if (updated == 0) {
+            throw new RuntimeException("通知不存在或已删除");
+        }
     }
     
     /**
@@ -86,8 +89,12 @@ public class NotificationService {
     @Transactional
     public void batchDeleteNotifications(List<Integer> notificationIds) {
         if (notificationIds == null || notificationIds.isEmpty()) {
-            throw new RuntimeException("通知ID列表不能为空");
+            throw new IllegalArgumentException("通知ID列表不能为空");
         }
-        notificationRepository.softDeleteByIds(notificationIds);
+        int updated = notificationRepository.softDeleteByIds(notificationIds);
+        if (updated < notificationIds.size()) {
+            // Some notifications might already be deleted or not exist
+            // Log warning but don't fail the operation
+        }
     }
 }
