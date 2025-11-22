@@ -278,11 +278,6 @@ const showRoleDialog = async (user) => {
 }
 
 const assignRoles = async () => {
-  if (selectedRoles.value.length === 0) {
-    ElMessage.warning('请至少选择一个角色')
-    return
-  }
-  
   try {
     const response = await userAPI.assignRoles(selectedUser.value.userId, selectedRoles.value)
     if (response.success) {
@@ -306,10 +301,15 @@ const assignRoles = async () => {
 }
 
 const activateUser = async (userId) => {
-  // First, show the role dialog to assign roles
   const user = users.value.find(u => u.userId === userId)
   if (!user) {
     ElMessage.error('用户不存在')
+    return
+  }
+  
+  // Check if user is already active
+  if (user.userStatus === 'active') {
+    ElMessage.info('用户已经是激活状态')
     return
   }
   
@@ -318,8 +318,8 @@ const activateUser = async (userId) => {
     const rolesResponse = await userAPI.getUserRoles(userId)
     const currentRoles = rolesResponse.success ? rolesResponse.data : []
     
-    // If user has no roles or is inactive, force role assignment
-    if (user.userStatus === 'inactive' && currentRoles.length === 0) {
+    // If user has no roles, force role assignment
+    if (currentRoles.length === 0) {
       ElMessage.warning('激活用户前必须先分配角色')
       selectedUser.value = user
       selectedRoles.value = []
