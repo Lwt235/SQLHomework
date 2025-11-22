@@ -84,17 +84,35 @@
     </el-dialog>
 
     <!-- Random Assignment Dialog -->
-    <el-dialog v-model="showRandomAssignDialog" title="一键随机分配" width="600px">
+    <el-dialog v-model="showRandomAssignDialog" title="一键随机分配" width="700px">
       <el-alert 
         title="随机分配说明" 
         type="info" 
         :closable="false"
         style="margin-bottom: 20px"
       >
-        <p>系统将为所有已锁定的作品随机分配指定数量的评审教师</p>
+        <p>系统将为指定作品随机分配指定数量的评审教师</p>
         <p>如果作品已有部分评审，将自动补齐至指定数量</p>
+        <p>可以选择特定作品和筛选教师范围</p>
       </el-alert>
       <el-form label-width="150px">
+        <el-form-item label="选择作品">
+          <el-select 
+            v-model="randomAssignForm.submissionId" 
+            placeholder="留空则为所有锁定作品分配"
+            clearable
+            filterable
+            style="width: 100%"
+          >
+            <el-option label="所有锁定作品" :value="null" />
+            <el-option 
+              v-for="submission in lockedSubmissions" 
+              :key="submission.submissionId" 
+              :label="submission.submissionTitle" 
+              :value="submission.submissionId"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="每个作品评审数量">
           <el-input-number 
             v-model="randomAssignForm.judgesPerSubmission" 
@@ -102,6 +120,51 @@
             :max="10"
             placeholder="评审数量"
           />
+        </el-form-item>
+        <el-form-item label="教师筛选模式">
+          <el-radio-group v-model="randomAssignForm.filterMode">
+            <el-radio label="all">所有教师</el-radio>
+            <el-radio label="include">仅包含</el-radio>
+            <el-radio label="exclude">排除</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item 
+          v-if="randomAssignForm.filterMode === 'include'" 
+          label="选择包含的教师"
+        >
+          <el-select 
+            v-model="randomAssignForm.includeTeacherIds" 
+            multiple
+            filterable
+            placeholder="选择要包含的教师"
+            style="width: 100%"
+          >
+            <el-option 
+              v-for="teacher in teachers" 
+              :key="teacher.userId" 
+              :label="`${teacher.realName || teacher.username} (ID: ${teacher.userId})`" 
+              :value="teacher.userId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item 
+          v-if="randomAssignForm.filterMode === 'exclude'" 
+          label="选择排除的教师"
+        >
+          <el-select 
+            v-model="randomAssignForm.excludeTeacherIds" 
+            multiple
+            filterable
+            placeholder="选择要排除的教师"
+            style="width: 100%"
+          >
+            <el-option 
+              v-for="teacher in teachers" 
+              :key="teacher.userId" 
+              :label="`${teacher.realName || teacher.username} (ID: ${teacher.userId})`" 
+              :value="teacher.userId"
+            />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -132,7 +195,11 @@ const manualAssignForm = ref({
 })
 
 const randomAssignForm = ref({
-  judgesPerSubmission: 3
+  submissionId: null,
+  judgesPerSubmission: 3,
+  filterMode: 'all',
+  includeTeacherIds: [],
+  excludeTeacherIds: []
 })
 
 const loadAssignments = async () => {
@@ -247,7 +314,19 @@ const submitRandomAssign = async () => {
   
   assigning.value = true
   try {
-    const response = await judgeAPI.randomAssignJudges(randomAssignForm.value.judgesPerSubmission)
+    // Build payload based on filter mode
+    const payload = {
+      judgesPerSubmission: randomAssignForm.value.judgesPerSubmission,
+      submissionId: randomAssignForm.value.submissionId
+    }
+    
+    if (randomAssignForm.value.filterMode === 'include' && randomAssignForm.value.includeTeacherIds.length > 0) {
+      payload.includeTeacherIds = randomAssignForm.value.includeTeacherIds
+    } else if (randomAssignForm.value.filterMode === 'exclude' && randomAssignForm.value.excludeTeacherIds.length > 0) {
+      payload.excludeTeacherIds = randomAssignForm.value.excludeTeacherIds
+    }
+    
+    const response = await judgeAPI.randomAssignJudges(payload)
     
     if (response.success) {
       ElMessage.success(response.message || '随机分配成功')

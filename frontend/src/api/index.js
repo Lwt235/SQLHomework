@@ -135,8 +135,8 @@ export const judgeAPI = {
   manualAssignJudge(data) {
     return api.post('/judge/assignments/manual', data)
   },
-  randomAssignJudges(judgesPerSubmission) {
-    return api.post('/judge/assignments/random', { judgesPerSubmission })
+  randomAssignJudges(payload) {
+    return api.post('/judge/assignments/random', payload)
   },
   confirmReview(userId, submissionId) {
     return api.post('/judge/assignments/confirm', { userId, submissionId })

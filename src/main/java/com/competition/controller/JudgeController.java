@@ -91,12 +91,21 @@ public class JudgeController {
     public ResponseEntity<ApiResponse<Integer>> randomAssignJudges(@RequestBody Map<String, Object> payload) {
         try {
             Integer judgesPerSubmission = (Integer) payload.getOrDefault("judgesPerSubmission", 3);
+            Integer submissionId = payload.get("submissionId") != null ? (Integer) payload.get("submissionId") : null;
+            
+            @SuppressWarnings("unchecked")
+            List<Integer> includeTeacherIds = (List<Integer>) payload.get("includeTeacherIds");
+            
+            @SuppressWarnings("unchecked")
+            List<Integer> excludeTeacherIds = (List<Integer>) payload.get("excludeTeacherIds");
             
             if (judgesPerSubmission == null || judgesPerSubmission <= 0) {
                 return ResponseEntity.badRequest().body(ApiResponse.error("每个作品至少需要分配1个评审"));
             }
             
-            int assignmentCount = judgeService.randomAssignJudges(judgesPerSubmission);
+            int assignmentCount = judgeService.randomAssignJudgesFiltered(
+                judgesPerSubmission, submissionId, includeTeacherIds, excludeTeacherIds
+            );
             return ResponseEntity.ok(ApiResponse.success("成功随机分配 " + assignmentCount + " 个评审任务", assignmentCount));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("随机分配失败: " + e.getMessage()));

@@ -106,6 +106,20 @@ public class JudgeService {
      */
     @Transactional
     public int randomAssignJudges(int judgesPerSubmission) {
+        return randomAssignJudgesFiltered(judgesPerSubmission, null, null, null);
+    }
+    
+    /**
+     * Randomly assign judges to specific submission(s) with teacher filtering
+     * @param judgesPerSubmission Number of judges to assign per submission
+     * @param submissionId Specific submission ID (null for all locked submissions)
+     * @param includeTeacherIds List of teacher IDs to include (null for all)
+     * @param excludeTeacherIds List of teacher IDs to exclude (null for none)
+     * @return Number of assignments created
+     */
+    @Transactional
+    public int randomAssignJudgesFiltered(int judgesPerSubmission, Integer submissionId, 
+                                          List<Integer> includeTeacherIds, List<Integer> excludeTeacherIds) {
         if (judgesPerSubmission <= 0) {
             throw new RuntimeException("每个作品至少需要分配1个评审");
         }
@@ -116,14 +130,45 @@ public class JudgeService {
             throw new RuntimeException("系统中没有教师用户可以分配评审任务");
         }
         
-        if (teachers.size() < judgesPerSubmission) {
-            throw new RuntimeException("教师用户数量不足，无法完成分配");
+        // Apply teacher filters
+        if (includeTeacherIds != null && !includeTeacherIds.isEmpty()) {
+            teachers = teachers.stream()
+                    .filter(t -> includeTeacherIds.contains(t.getUserId()))
+                    .collect(Collectors.toList());
         }
         
-        // Get all locked submissions that need judge assignment
-        List<Submission> lockedSubmissions = submissionRepository.findBySubmissionStatus("locked");
-        if (lockedSubmissions.isEmpty()) {
-            throw new RuntimeException("没有需要分配评审的锁定作品");
+        if (excludeTeacherIds != null && !excludeTeacherIds.isEmpty()) {
+            teachers = teachers.stream()
+                    .filter(t -> !excludeTeacherIds.contains(t.getUserId()))
+                    .collect(Collectors.toList());
+        }
+        
+        if (teachers.isEmpty()) {
+            throw new RuntimeException("根据筛选条件没有可用的教师");
+        }
+        
+        if (teachers.size() < judgesPerSubmission) {
+            throw new RuntimeException("可用教师用户数量不足，无法完成分配");
+        }
+        
+        // Get submissions to assign
+        List<Submission> lockedSubmissions;
+        if (submissionId != null) {
+            // Assign to specific submission
+            Submission submission = submissionRepository.findById(submissionId)
+                    .orElseThrow(() -> new RuntimeException("作品不存在"));
+            
+            if (!"locked".equals(submission.getSubmissionStatus())) {
+                throw new RuntimeException("只有已锁定的作品才能分配评审");
+            }
+            
+            lockedSubmissions = java.util.Collections.singletonList(submission);
+        } else {
+            // Assign to all locked submissions
+            lockedSubmissions = submissionRepository.findBySubmissionStatus("locked");
+            if (lockedSubmissions.isEmpty()) {
+                throw new RuntimeException("没有需要分配评审的锁定作品");
+            }
         }
         
         int assignmentCount = 0;
