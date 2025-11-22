@@ -224,7 +224,7 @@ const updateSubmission = async () => {
 
 const submitWork = async (id) => {
   try {
-    const response = await submissionAPI.submitSubmission(id, authStore.user.userId)
+    const response = await submissionAPI.submitSubmission(id)
     if (response.success) {
       ElMessage.success('作品提交成功')
       loadSubmissions()
@@ -236,7 +236,7 @@ const submitWork = async (id) => {
 
 const lockWork = async (id) => {
   try {
-    const response = await submissionAPI.lockSubmission(id, authStore.user.userId)
+    const response = await submissionAPI.lockSubmission(id)
     if (response.success) {
       ElMessage.success('作品已最终锁定')
       await loadApprovedRegistrations()

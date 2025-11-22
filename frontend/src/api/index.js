@@ -105,11 +105,11 @@ export const submissionAPI = {
   updateSubmission(id, data) {
     return api.put(`/submissions/${id}`, data)
   },
-  submitSubmission(id, userId) {
-    return api.post(`/submissions/${id}/submit`, { userId })
+  submitSubmission(id) {
+    return api.post(`/submissions/${id}/submit`)
   },
-  lockSubmission(id, userId) {
-    return api.post(`/submissions/${id}/lock`, { userId })
+  lockSubmission(id) {
+    return api.post(`/submissions/${id}/lock`)
   },
   getSubmissionsByRegistration(registrationId) {
     return api.get(`/submissions/registration/${registrationId}`)

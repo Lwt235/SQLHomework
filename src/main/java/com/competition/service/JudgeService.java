@@ -236,7 +236,7 @@ public class JudgeService {
             throw new RuntimeException("该评审已经确认完成，无法重复确认");
         }
         
-        if (assignment.getScore() == null || assignment.getScore().compareTo(BigDecimal.ZERO) == 0) {
+        if (assignment.getScore() == null) {
             throw new RuntimeException("请先完成评分后再确认");
         }
         

@@ -145,7 +145,7 @@ public class SubmissionService {
             
             Optional<TeamMember> memberOpt = teamMemberRepository.findById(memberId);
             if (memberOpt.isPresent()) {
-                return "leader".equals(memberOpt.get().getRoleInTeam());
+                return TeamService.ROLE_LEADER.equals(memberOpt.get().getRoleInTeam());
             }
         }
         

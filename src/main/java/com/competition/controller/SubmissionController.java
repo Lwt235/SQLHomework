@@ -3,10 +3,12 @@ package com.competition.controller;
 import com.competition.dto.ApiResponse;
 import com.competition.entity.Submission;
 import com.competition.service.SubmissionService;
+import com.competition.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +19,9 @@ public class SubmissionController {
 
     @Autowired
     private SubmissionService submissionService;
+    
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<Submission>>> getAllSubmissions() {
@@ -56,12 +61,14 @@ public class SubmissionController {
     @PostMapping("/{id}/submit")
     public ResponseEntity<ApiResponse<Submission>> submitWork(
             @PathVariable Integer id,
-            @RequestBody Map<String, Integer> payload) {
+            HttpServletRequest request) {
         try {
-            Integer userId = payload.get("userId");
-            if (userId == null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("用户ID不能为空"));
+            String token = jwtTokenProvider.resolveToken(request);
+            if (token == null || !jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(401).body(ApiResponse.error("未授权"));
             }
+            
+            Integer userId = jwtTokenProvider.getUserIdFromToken(token);
             Submission submitted = submissionService.submitWork(id, userId);
             return ResponseEntity.ok(ApiResponse.success("Work submitted successfully", submitted));
         } catch (Exception e) {
@@ -72,12 +79,14 @@ public class SubmissionController {
     @PostMapping("/{id}/lock")
     public ResponseEntity<ApiResponse<Submission>> lockSubmission(
             @PathVariable Integer id,
-            @RequestBody Map<String, Integer> payload) {
+            HttpServletRequest request) {
         try {
-            Integer userId = payload.get("userId");
-            if (userId == null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("用户ID不能为空"));
+            String token = jwtTokenProvider.resolveToken(request);
+            if (token == null || !jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(401).body(ApiResponse.error("未授权"));
             }
+            
+            Integer userId = jwtTokenProvider.getUserIdFromToken(token);
             Submission locked = submissionService.lockSubmission(id, userId);
             return ResponseEntity.ok(ApiResponse.success("Submission locked successfully", locked));
         } catch (Exception e) {
