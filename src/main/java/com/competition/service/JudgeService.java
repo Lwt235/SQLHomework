@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
@@ -84,7 +85,7 @@ public class JudgeService {
         id.setUserId(judgeUserId);
         id.setSubmissionId(submissionId);
         
-        if (judgeAssignmentRepository.findById(id).isPresent()) {
+        if (judgeAssignmentRepository.existsById(id)) {
             throw new RuntimeException("该评审已被分配给此作品");
         }
         
@@ -157,7 +158,7 @@ public class JudgeService {
             }
             
             // Create assignments
-            BigDecimal weight = BigDecimal.ONE.divide(BigDecimal.valueOf(judgesPerSubmission), 2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal weight = BigDecimal.ONE.divide(BigDecimal.valueOf(judgesPerSubmission), 2, RoundingMode.HALF_UP);
             for (User teacher : selectedTeachers) {
                 JudgeAssignment assignment = new JudgeAssignment();
                 assignment.setUserId(teacher.getUserId());

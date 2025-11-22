@@ -58,13 +58,11 @@ public class UserService {
             String newUsername = (String) updates.get("username");
             if (newUsername != null && !newUsername.trim().isEmpty()) {
                 // Check if username is already used by another user
-                if (userRepository.existsByUsername(newUsername)) {
-                    userRepository.findByUsername(newUsername).ifPresent(existingUser -> {
-                        if (!existingUser.getUserId().equals(userId)) {
-                            throw new RuntimeException("用户名已被其他用户使用");
-                        }
-                    });
-                }
+                userRepository.findByUsername(newUsername).ifPresent(existingUser -> {
+                    if (!existingUser.getUserId().equals(userId)) {
+                        throw new RuntimeException("用户名已被其他用户使用");
+                    }
+                });
                 user.setUsername(newUsername);
             }
         }

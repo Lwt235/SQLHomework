@@ -165,6 +165,8 @@ const loadTeachers = async () => {
     const response = await userAPI.getAllUsers()
     if (response.success) {
       // Filter to only include teachers
+      // Note: This makes N+1 API calls. In production, consider creating a 
+      // dedicated backend endpoint that returns users with their roles in a single call
       const allRolesResponse = await userAPI.getAllRoles()
       const teacherRole = allRolesResponse.data.find(r => r.roleCode === 'TEACHER')
       
