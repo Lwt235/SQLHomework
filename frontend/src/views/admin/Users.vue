@@ -36,6 +36,7 @@
               type="success" 
               size="small" 
               @click="activateUser(row.userId)"
+              :disabled="row.userId === authStore.user?.userId"
             >
               激活
             </el-button>
@@ -44,6 +45,7 @@
               type="warning" 
               size="small" 
               @click="suspendUser(row.userId)"
+              :disabled="row.userId === authStore.user?.userId"
             >
               暂停
             </el-button>
@@ -52,6 +54,7 @@
               type="success" 
               size="small" 
               @click="activateUser(row.userId)"
+              :disabled="row.userId === authStore.user?.userId"
             >
               激活
             </el-button>
@@ -59,6 +62,7 @@
               type="primary" 
               size="small" 
               @click="showRoleDialog(row)"
+              :disabled="row.userId === authStore.user?.userId"
             >
               分配权限
             </el-button>

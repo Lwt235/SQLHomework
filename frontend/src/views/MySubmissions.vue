@@ -137,8 +137,14 @@ const loadSubmissions = async () => {
   try {
     const response = await submissionAPI.getAllSubmissions()
     if (response.success) {
+      // Get all registrations for current user (not just the filtered approvedRegistrations)
+      const userRegsResponse = await registrationAPI.getRegistrationsByUser(authStore.user.userId)
+      const userRegistrationIds = userRegsResponse.success 
+        ? userRegsResponse.data.filter(r => r.registrationStatus === 'approved').map(r => r.registrationId)
+        : []
+      
       submissions.value = response.data.filter(s => 
-        approvedRegistrations.value.some(r => r.registrationId === s.registrationId)
+        userRegistrationIds.includes(s.registrationId)
       )
     }
   } catch (error) {
