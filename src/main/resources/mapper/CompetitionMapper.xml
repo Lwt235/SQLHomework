@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 
+  Example XML Mapper File
+  This demonstrates how to use XML mappers for complex queries, stored procedures, and dynamic SQL
+  Place this file in src/main/resources/mapper/ directory
+-->
+
+<mapper namespace="com.competition.mapper.CompetitionMapper">
+
+    <!-- Complex query with joins -->
+    <select id="getCompetitionWithRegistrationCount" resultType="map">
+        SELECT 
+            c.competition_id,
+            c.competition_title,
+            c.competition_status,
+            c.start_date,
+            c.end_date,
+            COUNT(DISTINCT r.registration_id) as registration_count,
+            COUNT(DISTINCT s.submission_id) as submission_count
+        FROM Competition c
+        LEFT JOIN Registration r ON c.competition_id = r.competition_id 
+            AND r.is_deleted = FALSE
+        LEFT JOIN Submission s ON r.registration_id = s.registration_id 
+            AND s.is_deleted = FALSE
+        WHERE c.competition_id = #{competitionId}
+          AND c.is_deleted = FALSE
+        GROUP BY c.competition_id, c.competition_title, c.competition_status, 
+                 c.start_date, c.end_date
+    </select>
+
+    <!-- Call stored procedure to calculate awards -->
+    <select id="calculateAwards" statementType="CALLABLE">
+        {CALL calculate_competition_awards(#{competitionId, mode=IN, jdbcType=INTEGER})}
+    </select>
+    
+    <!-- Call stored procedure to update competition statuses -->
+    <select id="updateCompetitionStatuses" statementType="CALLABLE">
+        {CALL update_competition_statuses()}
+    </select>
+
+    <!-- Dynamic SQL example - search competitions with optional filters -->
+    <select id="searchCompetitions" resultMap="competitionResultMap">
+        SELECT * FROM Competition
+        WHERE is_deleted = FALSE
+        <if test="status != null">
+            AND competition_status = #{status}
+        </if>
+        <if test="category != null">
+            AND category = #{category}
+        </if>
+        <if test="level != null">
+            AND level = #{level}
+        </if>
+        <if test="keyword != null">
+            AND (competition_title LIKE CONCAT('%', #{keyword}, '%')
+                 OR description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- Batch insert example -->
+    <insert id="batchInsertCompetitions">
+        INSERT INTO Competition (
+            competition_title, short_title, competition_status, description,
+            category, level, organizer, created_at, updated_at, is_deleted
+        ) VALUES
+        <foreach collection="competitions" item="comp" separator=",">
+            (#{comp.competitionTitle}, #{comp.shortTitle}, #{comp.competitionStatus},
+             #{comp.description}, #{comp.category}, #{comp.level}, #{comp.organizer},
+             NOW(), NOW(), FALSE)
+        </foreach>
+    </insert>
+
+    <!-- Complex update with conditional logic -->
+    <update id="updateCompetitionSelectively">
+        UPDATE Competition
+        <set>
+            <if test="competitionTitle != null">competition_title = #{competitionTitle},</if>
+            <if test="competitionStatus != null">competition_status = #{competitionStatus},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="level != null">level = #{level},</if>
+            updated_at = NOW()
+        </set>
+        WHERE competition_id = #{competitionId}
+    </update>
+
+</mapper>
