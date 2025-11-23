@@ -62,20 +62,20 @@
       </div>
 
       <div class="account-actions" v-if="!authStore.isAdmin">
-        <!-- <el-divider /> -->
-        <!-- <el-alert
+        <el-divider />
+        <el-alert
           title="账号注销"
           type="warning"
           description="注销账号后将无法恢复，请谨慎操作！"
           :closable="false"
-          style="margin-bottom: 15px"
-        /> -->
+          style="margin-bottom: 15px; justify-content: center;"
+        />
         <el-popconfirm
           title="确定要注销账号吗？此操作不可恢复！"
           confirm-button-text="确定注销"
           cancel-button-text="取消"
           @confirm="deactivateAccount"
-          :popper-style="{ with: 'auto'}"
+          :popper-style="{ width: 'auto'}"
         >
           <template #reference>
             <el-button type="danger" plain>注销账号</el-button>
@@ -138,9 +138,9 @@
 
   <!-- Edit Profile Dialog -->
   <el-dialog v-model="editDialogVisible" title="修改个人信息" width="600px">
-    <el-alert 
-      title="提示：修改用户名前请确保新用户名未被占用" 
-      type="info" 
+    <el-alert
+      title="提示：修改用户名前请确保新用户名未被占用"
+      type="info"
       :closable="false"
       style="margin-bottom: 20px"
     />
@@ -239,10 +239,10 @@ const showEditDialog = () => {
 
 const submitEditForm = async () => {
   if (!editFormRef.value) return
-  
+
   await editFormRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     submitting.value = true
     try {
       const response = await userAPI.updateUserProfile(authStore.user?.userId, editForm.value)
@@ -356,5 +356,6 @@ onMounted(() => {
 
 .account-actions :deep(.el-alert__description) {
   text-align: center;
+  align-items: center;
 }
 </style>
