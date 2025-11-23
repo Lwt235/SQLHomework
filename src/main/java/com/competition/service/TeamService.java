@@ -5,11 +5,11 @@ import com.competition.entity.TeamMember;
 import com.competition.entity.User;
 import com.competition.entity.UserRole;
 import com.competition.entity.Role;
-import com.competition.repository.TeamRepository;
-import com.competition.repository.TeamMemberRepository;
-import com.competition.repository.UserRepository;
-import com.competition.repository.UserRoleRepository;
-import com.competition.repository.RoleRepository;
+import com.competition.mapper.TeamMapper;
+import com.competition.mapper.TeamMemberMapper;
+import com.competition.mapper.UserMapper;
+import com.competition.mapper.UserRoleMapper;
+import com.competition.mapper.RoleMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,42 +27,43 @@ public class TeamService {
     public static final String ROLE_MEMBER = "member";
     
     @Autowired
-    private TeamRepository teamRepository;
+    private TeamMapper teamMapper;
     
     @Autowired
-    private TeamMemberRepository teamMemberRepository;
+    private TeamMemberMapper teamMemberMapper;
     
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
     
     @Autowired
-    private UserRoleRepository userRoleRepository;
+    private UserRoleMapper userRoleMapper;
     
     @Autowired
-    private RoleRepository roleRepository;
+    private RoleMapper roleMapper;
     
     public List<Team> getAllTeams() {
-        return teamRepository.findAll().stream()
+        return teamMapper.findAll().stream()
                 .filter(team -> !team.getDeleted())
                 .collect(Collectors.toList());
     }
     
     public Team getTeamById(Integer teamId) {
-        return teamRepository.findById(teamId)
-                .filter(team -> !team.getDeleted())
-                .orElseThrow(() -> new RuntimeException("团队不存在"));
+        Team team = teamMapper.findById(teamId);
+        if (team == null || team.getDeleted()) {
+            throw new RuntimeException("团队不存在");
+        }
+        return team;
     }
     
     public List<TeamMember> getTeamMembers(Integer teamId) {
-        return teamMemberRepository.findByTeamId(teamId);
+        return teamMemberMapper.findByTeamId(teamId);
     }
     
     public List<Team> getTeamsByUserId(Integer userId) {
-        List<TeamMember> memberships = teamMemberRepository.findByUserId(userId);
+        List<TeamMember> memberships = teamMemberMapper.findByUserId(userId);
         return memberships.stream()
-                .map(tm -> teamRepository.findById(tm.getTeamId()))
-                .filter(opt -> opt.isPresent() && !opt.get().getDeleted())
-                .map(opt -> opt.get())
+                .map(tm -> teamMapper.findById(tm.getTeamId()))
+                .filter(team -> team != null && !team.getDeleted())
                 .collect(Collectors.toList());
     }
     
@@ -74,8 +75,10 @@ public class TeamService {
         }
         
         // Validate creator exists
-        User creator = userRepository.findById(creatorUserId)
-                .orElseThrow(() -> new RuntimeException("创建者不存在"));
+        User creator = userMapper.findById(creatorUserId);
+        if (creator == null) {
+            throw new RuntimeException("创建者不存在");
+        }
         
         if (creator.getDeleted()) {
             throw new RuntimeException("用户账号已被删除");
@@ -86,16 +89,16 @@ public class TeamService {
         }
         
         team.setFormedAt(LocalDateTime.now());
-        Team savedTeam = teamRepository.save(team);
+        teamMapper.insert(team);
         
         // Add creator as team leader
         TeamMember leaderMember = new TeamMember();
-        leaderMember.setTeamId(savedTeam.getTeamId());
+        leaderMember.setTeamId(team.getTeamId());
         leaderMember.setUserId(creatorUserId);
         leaderMember.setRoleInTeam(ROLE_LEADER);
-        teamMemberRepository.save(leaderMember);
+        teamMemberMapper.insert(leaderMember);
         
-        return savedTeam;
+        return team;
     }
     
     public Team updateTeam(Integer teamId, Team teamUpdate) {
@@ -109,14 +112,15 @@ public class TeamService {
             team.setDescription(teamUpdate.getDescription());
         }
         
-        return teamRepository.save(team);
+        teamMapper.update(team);
+        return team;
     }
     
     @Transactional
     public void deleteTeam(Integer teamId) {
         Team team = getTeamById(teamId);
         team.setDeleted(true);
-        teamRepository.save(team);
+        teamMapper.update(team);
     }
     
     @Transactional
@@ -125,8 +129,10 @@ public class TeamService {
         Team team = getTeamById(teamId);
         
         // Validate user exists
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
         
         if (user.getDeleted()) {
             throw new RuntimeException("用户账号已被删除");
@@ -137,7 +143,7 @@ public class TeamService {
         }
         
         // Check if user is already in team
-        List<TeamMember> existingMembers = teamMemberRepository.findByTeamId(teamId);
+        List<TeamMember> existingMembers = teamMemberMapper.findByTeamId(teamId);
         boolean alreadyMember = existingMembers.stream()
                 .anyMatch(tm -> tm.getUserId().equals(userId));
         
@@ -149,33 +155,31 @@ public class TeamService {
         teamMember.setTeamId(teamId);
         teamMember.setUserId(userId);
         teamMember.setRoleInTeam(roleInTeam != null ? roleInTeam : ROLE_MEMBER);
-        teamMemberRepository.save(teamMember);
+        teamMemberMapper.insert(teamMember);
     }
     
     @Transactional
     public void removeTeamMember(Integer teamId, Integer userId) {
         Team team = getTeamById(teamId);
         
-        TeamMember.TeamMemberId id = new TeamMember.TeamMemberId();
-        id.setTeamId(teamId);
-        id.setUserId(userId);
-        
-        TeamMember member = teamMemberRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("成员不存在"));
+        TeamMember member = teamMemberMapper.findById(teamId, userId);
+        if (member == null) {
+            throw new RuntimeException("成员不存在");
+        }
         
         // Don't allow removing the leader if there are other members
         if (ROLE_LEADER.equals(member.getRoleInTeam())) {
-            List<TeamMember> members = teamMemberRepository.findByTeamId(teamId);
+            List<TeamMember> members = teamMemberMapper.findByTeamId(teamId);
             if (members.size() > 1) {
                 throw new RuntimeException("团队队长不能在有其他成员时退出，请先转让队长或解散团队");
             }
         }
         
-        teamMemberRepository.delete(member);
+        teamMemberMapper.delete(member);
     }
     
     public List<com.competition.dto.TeamMemberDetailDTO> getTeamMembersWithDetails(Integer teamId, Integer currentUserId) {
-        List<TeamMember> members = teamMemberRepository.findByTeamId(teamId);
+        List<TeamMember> members = teamMemberMapper.findByTeamId(teamId);
         List<com.competition.dto.TeamMemberDetailDTO> result = new java.util.ArrayList<>();
         
         // Get all user IDs to fetch in one query
@@ -184,7 +188,10 @@ public class TeamService {
                 .collect(Collectors.toList());
         
         // Fetch all users at once to avoid N+1 queries
-        List<User> users = userRepository.findAllById(userIds);
+        List<User> users = userIds.stream()
+                .map(id -> userMapper.findById(id))
+                .filter(user -> user != null)
+                .collect(Collectors.toList());
         java.util.Map<Integer, User> userMap = users.stream()
                 .collect(Collectors.toMap(User::getUserId, u -> u));
         
@@ -216,31 +223,27 @@ public class TeamService {
         Team team = getTeamById(teamId);
         
         // Check that current user is the captain
-        TeamMember.TeamMemberId currentCaptainId = new TeamMember.TeamMemberId();
-        currentCaptainId.setTeamId(teamId);
-        currentCaptainId.setUserId(currentCaptainUserId);
-        
-        TeamMember currentCaptain = teamMemberRepository.findById(currentCaptainId)
-                .orElseThrow(() -> new RuntimeException("当前用户不是团队成员"));
+        TeamMember currentCaptain = teamMemberMapper.findById(teamId, currentCaptainUserId);
+        if (currentCaptain == null) {
+            throw new RuntimeException("当前用户不是团队成员");
+        }
         
         if (!ROLE_LEADER.equals(currentCaptain.getRoleInTeam())) {
             throw new RuntimeException("只有队长才能转让队长身份");
         }
         
         // Check that new captain is a member of the team
-        TeamMember.TeamMemberId newCaptainId = new TeamMember.TeamMemberId();
-        newCaptainId.setTeamId(teamId);
-        newCaptainId.setUserId(newCaptainUserId);
-        
-        TeamMember newCaptain = teamMemberRepository.findById(newCaptainId)
-                .orElseThrow(() -> new RuntimeException("目标用户不是团队成员"));
+        TeamMember newCaptain = teamMemberMapper.findById(teamId, newCaptainUserId);
+        if (newCaptain == null) {
+            throw new RuntimeException("目标用户不是团队成员");
+        }
         
         // Transfer captain role
         currentCaptain.setRoleInTeam(ROLE_MEMBER);
         newCaptain.setRoleInTeam(ROLE_LEADER);
         
-        teamMemberRepository.save(currentCaptain);
-        teamMemberRepository.save(newCaptain);
+        teamMemberMapper.update(currentCaptain);
+        teamMemberMapper.update(newCaptain);
     }
     
     /**
@@ -252,24 +255,20 @@ public class TeamService {
         Team team = getTeamById(teamId);
         
         // Check that operator is the captain
-        TeamMember.TeamMemberId operatorId = new TeamMember.TeamMemberId();
-        operatorId.setTeamId(teamId);
-        operatorId.setUserId(operatorUserId);
-        
-        TeamMember operator = teamMemberRepository.findById(operatorId)
-                .orElseThrow(() -> new RuntimeException("您不是团队成员"));
+        TeamMember operator = teamMemberMapper.findById(teamId, operatorUserId);
+        if (operator == null) {
+            throw new RuntimeException("您不是团队成员");
+        }
         
         if (!ROLE_LEADER.equals(operator.getRoleInTeam())) {
             throw new RuntimeException("只有队长才能修改成员角色");
         }
         
         // Get target member
-        TeamMember.TeamMemberId targetId = new TeamMember.TeamMemberId();
-        targetId.setTeamId(teamId);
-        targetId.setUserId(targetUserId);
-        
-        TeamMember targetMember = teamMemberRepository.findById(targetId)
-                .orElseThrow(() -> new RuntimeException("目标用户不是团队成员"));
+        TeamMember targetMember = teamMemberMapper.findById(teamId, targetUserId);
+        if (targetMember == null) {
+            throw new RuntimeException("目标用户不是团队成员");
+        }
         
         // Validate new role
         if (!newRole.equals(ROLE_LEADER) && !newRole.equals(ROLE_VICE_LEADER) && !newRole.equals(ROLE_MEMBER)) {
@@ -279,18 +278,18 @@ public class TeamService {
         // If promoting to leader, demote current leader
         if (ROLE_LEADER.equals(newRole)) {
             // Find current leader(s) and demote them to member
-            List<TeamMember> allMembers = teamMemberRepository.findByTeamId(teamId);
+            List<TeamMember> allMembers = teamMemberMapper.findByTeamId(teamId);
             for (TeamMember member : allMembers) {
                 if (ROLE_LEADER.equals(member.getRoleInTeam()) && !member.getUserId().equals(targetUserId)) {
                     member.setRoleInTeam(ROLE_MEMBER);
-                    teamMemberRepository.save(member);
+                    teamMemberMapper.update(member);
                 }
             }
         }
         
         // Update target member role
         targetMember.setRoleInTeam(newRole);
-        teamMemberRepository.save(targetMember);
+        teamMemberMapper.update(targetMember);
     }
     
     public List<User> searchUsersByNicknameOrUsername(String query) {
@@ -299,7 +298,7 @@ public class TeamService {
         }
         
         // Search by username or ID
-        List<User> users = userRepository.searchByUsernameOrId(query.trim());
+        List<User> users = userMapper.searchByUsernameOrId(query.trim());
         
         // Filter to only include students
         return users.stream()
@@ -311,10 +310,10 @@ public class TeamService {
      * Check if user has STUDENT role
      */
     private boolean hasStudentRole(Integer userId) {
-        List<UserRole> userRoles = userRoleRepository.findByUserId(userId);
+        List<UserRole> userRoles = userRoleMapper.findByUserId(userId);
         
         for (UserRole userRole : userRoles) {
-            Role role = roleRepository.findById(userRole.getRoleId()).orElse(null);
+            Role role = roleMapper.findById(userRole.getRoleId());
             if (role != null && "STUDENT".equalsIgnoreCase(role.getRoleCode())) {
                 return true;
             }
@@ -324,12 +323,11 @@ public class TeamService {
     }
     
     public List<Team> getTeamsByUserIdAndRole(Integer userId, String role) {
-        List<TeamMember> memberships = teamMemberRepository.findByUserId(userId);
+        List<TeamMember> memberships = teamMemberMapper.findByUserId(userId);
         return memberships.stream()
                 .filter(tm -> role.equals(tm.getRoleInTeam()))
-                .map(tm -> teamRepository.findById(tm.getTeamId()))
-                .filter(opt -> opt.isPresent() && !opt.get().getDeleted())
-                .map(opt -> opt.get())
+                .map(tm -> teamMapper.findById(tm.getTeamId()))
+                .filter(team -> team != null && !team.getDeleted())
                 .collect(Collectors.toList());
     }
 }

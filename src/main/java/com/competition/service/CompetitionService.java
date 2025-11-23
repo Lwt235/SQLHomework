@@ -1,7 +1,7 @@
 package com.competition.service;
 
 import com.competition.entity.Competition;
-import com.competition.repository.CompetitionRepository;
+import com.competition.mapper.CompetitionMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -12,26 +12,29 @@ import java.util.stream.Collectors;
 public class CompetitionService {
 
     @Autowired
-    private CompetitionRepository competitionRepository;
+    private CompetitionMapper competitionMapper;
 
     public List<Competition> getAllCompetitions() {
-        return competitionRepository.findAll().stream()
+        return competitionMapper.findAll().stream()
                 .filter(competition -> !competition.getDeleted())
                 .collect(Collectors.toList());
     }
 
     public Optional<Competition> getCompetitionById(Integer id) {
-        return competitionRepository.findById(id);
+        return Optional.ofNullable(competitionMapper.findById(id));
     }
 
     public Competition createCompetition(Competition competition) {
         validateCompetitionDates(competition);
-        return competitionRepository.save(competition);
+        competitionMapper.insert(competition);
+        return competition;
     }
 
     public Competition updateCompetition(Integer id, Competition competitionDetails) {
-        Competition competition = competitionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Competition not found"));
+        Competition competition = competitionMapper.findById(id);
+        if (competition == null) {
+            throw new RuntimeException("Competition not found");
+        }
 
         validateCompetitionDates(competitionDetails);
         
@@ -53,18 +56,21 @@ public class CompetitionService {
         competition.setAwardPublishDate(competitionDetails.getAwardPublishDate());
         competition.setMaxTeamSize(competitionDetails.getMaxTeamSize());
 
-        return competitionRepository.save(competition);
+        competitionMapper.update(competition);
+        return competition;
     }
 
     public void deleteCompetition(Integer id) {
-        Competition competition = competitionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Competition not found"));
+        Competition competition = competitionMapper.findById(id);
+        if (competition == null) {
+            throw new RuntimeException("Competition not found");
+        }
         competition.setDeleted(true);
-        competitionRepository.save(competition);
+        competitionMapper.update(competition);
     }
 
     public List<Competition> getCompetitionsByStatus(String status) {
-        return competitionRepository.findByCompetitionStatus(status).stream()
+        return competitionMapper.findByCompetitionStatus(status).stream()
                 .filter(competition -> !competition.getDeleted())
                 .collect(Collectors.toList());
     }
