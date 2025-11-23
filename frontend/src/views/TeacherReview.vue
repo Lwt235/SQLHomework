@@ -21,7 +21,6 @@
           </el-alert>
 
           <el-table :data="myAssignments" v-loading="loading" style="width: 100%">
-            <el-table-column prop="assignmentId" label="任务ID" width="80" />
             <el-table-column label="作品标题" min-width="200">
               <template #default="{ row }">
                 {{ row.submission?.submissionTitle || '-' }}
@@ -83,7 +82,6 @@
             v-loading="loading" 
             style="width: 100%"
           >
-            <el-table-column prop="assignmentId" label="任务ID" width="80" />
             <el-table-column label="作品标题" min-width="200">
               <template #default="{ row }">
                 {{ row.submission?.submissionTitle || '-' }}
@@ -192,7 +190,7 @@ const reviewRules = {
 const loadMyAssignments = async () => {
   loading.value = true
   try {
-    const response = await judgeAPI.getAssignmentsByJudge(authStore.user?.userId)
+    const response = await judgeAPI.getAssignmentsByJudgeWithDetails(authStore.user?.userId)
     if (response.success) {
       myAssignments.value = response.data
     }

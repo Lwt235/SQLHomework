@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.competition.mapper.JudgeAssignmentMapper">
+
+    <!-- Result Map -->
+    <resultMap id="judgeAssignmentResultMap" type="com.competition.entity.JudgeAssignment">
+        <result property="userId" column="user_id"/>
+        <result property="submissionId" column="submission_id"/>
+        <result property="weight" column="weight"/>
+        <result property="score" column="score"/>
+        <result property="comment" column="comment"/>
+        <result property="judgeStatus" column="judge_status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="is_deleted"/>
+    </resultMap>
+
+    <!-- Select All -->
+    <select id="findAll" resultMap="judgeAssignmentResultMap">
+        SELECT * FROM JudgeAssignment WHERE is_deleted = FALSE
+    </select>
+
+    <!-- Select By Id -->
+    <select id="findById" resultMap="judgeAssignmentResultMap">
+        SELECT * FROM JudgeAssignment 
+        WHERE user_id = #{userId} 
+          AND submission_id = #{submissionId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By Submission Id -->
+    <select id="findBySubmissionId" resultMap="judgeAssignmentResultMap">
+        SELECT * FROM JudgeAssignment 
+        WHERE submission_id = #{submissionId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By User Id -->
+    <select id="findByUserId" resultMap="judgeAssignmentResultMap">
+        SELECT * FROM JudgeAssignment 
+        WHERE user_id = #{userId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert">
+        INSERT INTO JudgeAssignment (
+            user_id, submission_id, weight, score, comment, judge_status,
+            created_at, updated_at, is_deleted
+        ) VALUES (
+            #{userId}, #{submissionId}, #{weight}, #{score}, #{comment}, #{judgeStatus},
+            NOW(), NOW(), FALSE
+        )
+    </insert>
+
+    <!-- Update -->
+    <update id="update">
+        UPDATE JudgeAssignment 
+        SET weight = #{weight},
+            score = #{score},
+            comment = #{comment},
+            judge_status = #{judgeStatus},
+            updated_at = NOW()
+        WHERE user_id = #{userId} 
+          AND submission_id = #{submissionId}
+    </update>
+
+    <!-- Delete By Id (Soft Delete) -->
+    <update id="deleteById">
+        UPDATE JudgeAssignment 
+        SET is_deleted = TRUE 
+        WHERE user_id = #{userId} 
+          AND submission_id = #{submissionId}
+    </update>
+
+</mapper>

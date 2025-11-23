@@ -1,6 +1,7 @@
 package com.competition.controller;
 
 import com.competition.dto.ApiResponse;
+import com.competition.dto.JudgeAssignmentWithDetailsDTO;
 import com.competition.entity.JudgeAssignment;
 import com.competition.service.JudgeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,11 +52,23 @@ public class JudgeController {
         List<JudgeAssignment> assignments = judgeService.getAssignmentsByJudge(userId);
         return ResponseEntity.ok(ApiResponse.success(assignments));
     }
+    
+    @GetMapping("/assignments/judge/{userId}/details")
+    public ResponseEntity<ApiResponse<List<JudgeAssignmentWithDetailsDTO>>> getAssignmentsByJudgeWithDetails(@PathVariable Integer userId) {
+        List<JudgeAssignmentWithDetailsDTO> assignments = judgeService.getAssignmentsByJudgeWithDetails(userId);
+        return ResponseEntity.ok(ApiResponse.success(assignments));
+    }
 
     @GetMapping("/assignments/submission/{submissionId}")
     public ResponseEntity<ApiResponse<List<JudgeAssignment>>> getAssignmentsBySubmission(
             @PathVariable Integer submissionId) {
         List<JudgeAssignment> assignments = judgeService.getAssignmentsBySubmission(submissionId);
+        return ResponseEntity.ok(ApiResponse.success(assignments));
+    }
+    
+    @GetMapping("/assignments/details")
+    public ResponseEntity<ApiResponse<List<JudgeAssignmentWithDetailsDTO>>> getAllAssignmentsWithDetails() {
+        List<JudgeAssignmentWithDetailsDTO> assignments = judgeService.getAllAssignmentsWithDetails();
         return ResponseEntity.ok(ApiResponse.success(assignments));
     }
     

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.competition.mapper.TeamMemberMapper">
+
+    <!-- Result Map -->
+    <resultMap id="teamMemberResultMap" type="com.competition.entity.TeamMember">
+        <result property="userId" column="user_id"/>
+        <result property="teamId" column="team_id"/>
+        <result property="roleInTeam" column="role_in_team"/>
+    </resultMap>
+
+    <!-- Select By Team Id -->
+    <select id="findByTeamId" resultMap="teamMemberResultMap">
+        SELECT * FROM TeamMember WHERE team_id = #{teamId}
+    </select>
+
+    <!-- Select By User Id -->
+    <select id="findByUserId" resultMap="teamMemberResultMap">
+        SELECT * FROM TeamMember WHERE user_id = #{userId}
+    </select>
+
+    <!-- Select By Id -->
+    <select id="findById" resultMap="teamMemberResultMap">
+        SELECT * FROM TeamMember 
+        WHERE team_id = #{teamId} 
+          AND user_id = #{userId}
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert">
+        INSERT INTO TeamMember (user_id, team_id, role_in_team) 
+        VALUES (#{userId}, #{teamId}, #{roleInTeam})
+    </insert>
+
+    <!-- Update -->
+    <update id="update">
+        UPDATE TeamMember 
+        SET role_in_team = #{roleInTeam}
+        WHERE user_id = #{userId} 
+          AND team_id = #{teamId}
+    </update>
+
+    <!-- Delete -->
+    <delete id="delete">
+        DELETE FROM TeamMember 
+        WHERE user_id = #{userId} 
+          AND team_id = #{teamId}
+    </delete>
+
+    <!-- Delete By Team Id -->
+    <delete id="deleteByTeamId">
+        DELETE FROM TeamMember 
+        WHERE team_id = #{teamId}
+    </delete>
+
+</mapper>

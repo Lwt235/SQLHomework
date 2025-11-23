@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.competition.mapper.RegistrationMapper">
+
+    <!-- Result Map -->
+    <resultMap id="registrationResultMap" type="com.competition.entity.Registration">
+        <id property="registrationId" column="registration_id"/>
+        <result property="competitionId" column="competition_id"/>
+        <result property="teamId" column="team_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="auditUserId" column="audit_user_id"/>
+        <result property="registrationStatus" column="registration_status"/>
+        <result property="auditTime" column="audit_time"/>
+        <result property="remark" column="remark"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="is_deleted"/>
+    </resultMap>
+
+    <!-- Select All -->
+    <select id="findAll" resultMap="registrationResultMap">
+        SELECT * FROM Registration WHERE is_deleted = FALSE
+    </select>
+
+    <!-- Select By Id -->
+    <select id="findById" resultMap="registrationResultMap">
+        SELECT * FROM Registration 
+        WHERE registration_id = #{registrationId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By Competition Id -->
+    <select id="findByCompetitionId" resultMap="registrationResultMap">
+        SELECT * FROM Registration 
+        WHERE competition_id = #{competitionId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By User Id -->
+    <select id="findByUserId" resultMap="registrationResultMap">
+        SELECT * FROM Registration 
+        WHERE user_id = #{userId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By Team Id -->
+    <select id="findByTeamId" resultMap="registrationResultMap">
+        SELECT * FROM Registration 
+        WHERE team_id = #{teamId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By Registration Status -->
+    <select id="findByRegistrationStatus" resultMap="registrationResultMap">
+        SELECT * FROM Registration 
+        WHERE registration_status = #{status} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="registrationId" keyColumn="registration_id">
+        INSERT INTO Registration (
+            competition_id, team_id, user_id, audit_user_id, registration_status,
+            audit_time, remark, created_at, updated_at, is_deleted
+        ) VALUES (
+            #{competitionId}, #{teamId}, #{userId}, #{auditUserId}, #{registrationStatus},
+            #{auditTime}, #{remark}, NOW(), NOW(), FALSE
+        )
+    </insert>
+
+    <!-- Update -->
+    <update id="update">
+        UPDATE Registration 
+        SET competition_id = #{competitionId},
+            team_id = #{teamId},
+            user_id = #{userId},
+            audit_user_id = #{auditUserId},
+            registration_status = #{registrationStatus},
+            audit_time = #{auditTime},
+            remark = #{remark},
+            updated_at = NOW()
+        WHERE registration_id = #{registrationId}
+    </update>
+
+    <!-- Delete By Id (Soft Delete) -->
+    <update id="deleteById">
+        UPDATE Registration 
+        SET is_deleted = TRUE 
+        WHERE registration_id = #{registrationId}
+    </update>
+
+</mapper>

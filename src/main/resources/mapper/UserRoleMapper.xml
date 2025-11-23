@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.competition.mapper.UserRoleMapper">
+
+    <!-- Result Map -->
+    <resultMap id="userRoleResultMap" type="com.competition.entity.UserRole">
+        <result property="userId" column="user_id"/>
+        <result property="roleId" column="role_id"/>
+    </resultMap>
+
+    <!-- Select By User Id -->
+    <select id="findByUserId" resultMap="userRoleResultMap">
+        SELECT * FROM UserRole WHERE user_id = #{userId}
+    </select>
+
+    <!-- Select By Role Id -->
+    <select id="findByRoleId" resultMap="userRoleResultMap">
+        SELECT * FROM UserRole WHERE role_id = #{roleId}
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert">
+        INSERT INTO UserRole (user_id, role_id) 
+        VALUES (#{userId}, #{roleId})
+    </insert>
+
+    <!-- Delete -->
+    <delete id="delete">
+        DELETE FROM UserRole 
+        WHERE user_id = #{userId} 
+          AND role_id = #{roleId}
+    </delete>
+
+    <!-- Delete By User Id -->
+    <delete id="deleteByUserId">
+        DELETE FROM UserRole 
+        WHERE user_id = #{userId}
+    </delete>
+
+</mapper>
