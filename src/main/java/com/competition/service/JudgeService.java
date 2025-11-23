@@ -5,11 +5,11 @@ import com.competition.entity.Submission;
 import com.competition.entity.User;
 import com.competition.entity.UserRole;
 import com.competition.entity.Role;
-import com.competition.repository.JudgeAssignmentRepository;
-import com.competition.repository.SubmissionRepository;
-import com.competition.repository.UserRepository;
-import com.competition.repository.UserRoleRepository;
-import com.competition.repository.RoleRepository;
+import com.competition.mapper.JudgeAssignmentMapper;
+import com.competition.mapper.SubmissionMapper;
+import com.competition.mapper.UserMapper;
+import com.competition.mapper.UserRoleMapper;
+import com.competition.mapper.RoleMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,36 +25,35 @@ import java.util.stream.Collectors;
 public class JudgeService {
 
     @Autowired
-    private JudgeAssignmentRepository judgeAssignmentRepository;
+    private JudgeAssignmentMapper judgeAssignmentMapper;
     
     @Autowired
-    private SubmissionRepository submissionRepository;
+    private SubmissionMapper submissionMapper;
     
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
     
     @Autowired
-    private UserRoleRepository userRoleRepository;
+    private UserRoleMapper userRoleMapper;
     
     @Autowired
-    private RoleRepository roleRepository;
+    private RoleMapper roleMapper;
 
     public List<JudgeAssignment> getAllAssignments() {
-        return judgeAssignmentRepository.findAll();
+        return judgeAssignmentMapper.findAll();
     }
 
     public JudgeAssignment createAssignment(JudgeAssignment assignment) {
-        return judgeAssignmentRepository.save(assignment);
+        judgeAssignmentMapper.insert(assignment);
+        return assignment;
     }
 
     public JudgeAssignment updateAssignment(JudgeAssignment assignment) {
         // Get existing assignment to preserve created_at and update judgeStatus
-        JudgeAssignment.JudgeAssignmentId id = new JudgeAssignment.JudgeAssignmentId();
-        id.setUserId(assignment.getUserId());
-        id.setSubmissionId(assignment.getSubmissionId());
-        
-        JudgeAssignment existing = judgeAssignmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("评审任务不存在"));
+        JudgeAssignment existing = judgeAssignmentMapper.findById(assignment.getUserId(), assignment.getSubmissionId());
+        if (existing == null) {
+            throw new RuntimeException("评审任务不存在");
+        }
         
         // Update fields
         existing.setScore(assignment.getScore());
@@ -66,15 +65,16 @@ public class JudgeService {
             existing.setJudgeStatus("reviewed");
         }
         
-        return judgeAssignmentRepository.save(existing);
+        judgeAssignmentMapper.update(existing);
+        return existing;
     }
 
     public List<JudgeAssignment> getAssignmentsByJudge(Integer userId) {
-        return judgeAssignmentRepository.findByUserId(userId);
+        return judgeAssignmentMapper.findByUserId(userId);
     }
 
     public List<JudgeAssignment> getAssignmentsBySubmission(Integer submissionId) {
-        return judgeAssignmentRepository.findBySubmissionId(submissionId);
+        return judgeAssignmentMapper.findBySubmissionId(submissionId);
     }
     
     /**
@@ -83,27 +83,28 @@ public class JudgeService {
     @Transactional
     public JudgeAssignment assignJudgeToSubmission(Integer judgeUserId, Integer submissionId, BigDecimal weight) {
         // Validate judge user exists and has TEACHER role
-        User judge = userRepository.findById(judgeUserId)
-                .orElseThrow(() -> new RuntimeException("评审教师不存在"));
+        User judge = userMapper.findById(judgeUserId);
+        if (judge == null) {
+            throw new RuntimeException("评审教师不存在");
+        }
         
         if (!hasTeacherRole(judgeUserId)) {
             throw new RuntimeException("只有教师用户才能被分配评审任务");
         }
         
         // Validate submission exists
-        Submission submission = submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new RuntimeException("作品不存在"));
+        Submission submission = submissionMapper.findById(submissionId);
+        if (submission == null) {
+            throw new RuntimeException("作品不存在");
+        }
         
         if (!"locked".equals(submission.getSubmissionStatus())) {
             throw new RuntimeException("只有已锁定的作品才能分配评审");
         }
         
         // Check if assignment already exists
-        JudgeAssignment.JudgeAssignmentId id = new JudgeAssignment.JudgeAssignmentId();
-        id.setUserId(judgeUserId);
-        id.setSubmissionId(submissionId);
-        
-        if (judgeAssignmentRepository.existsById(id)) {
+        JudgeAssignment existing = judgeAssignmentMapper.findById(judgeUserId, submissionId);
+        if (existing != null) {
             throw new RuntimeException("该评审已被分配给此作品");
         }
         
@@ -114,7 +115,8 @@ public class JudgeService {
         assignment.setWeight(weight != null ? weight : BigDecimal.ONE);
         assignment.setScore(BigDecimal.ZERO);
         
-        return judgeAssignmentRepository.save(assignment);
+        judgeAssignmentMapper.insert(assignment);
+        return assignment;
     }
     
     /**
@@ -173,8 +175,10 @@ public class JudgeService {
         List<Submission> lockedSubmissions;
         if (submissionId != null) {
             // Assign to specific submission
-            Submission submission = submissionRepository.findById(submissionId)
-                    .orElseThrow(() -> new RuntimeException("作品不存在"));
+            Submission submission = submissionMapper.findById(submissionId);
+            if (submission == null) {
+                throw new RuntimeException("作品不存在");
+            }
             
             if (!"locked".equals(submission.getSubmissionStatus())) {
                 throw new RuntimeException("只有已锁定的作品才能分配评审");
@@ -183,7 +187,7 @@ public class JudgeService {
             lockedSubmissions = java.util.Collections.singletonList(submission);
         } else {
             // Assign to all locked submissions
-            lockedSubmissions = submissionRepository.findBySubmissionStatus("locked");
+            lockedSubmissions = submissionMapper.findBySubmissionStatus("locked");
             if (lockedSubmissions.isEmpty()) {
                 throw new RuntimeException("没有需要分配评审的锁定作品");
             }
@@ -194,7 +198,7 @@ public class JudgeService {
         
         for (Submission submission : lockedSubmissions) {
             // Get existing assignments for this submission
-            List<JudgeAssignment> existingAssignments = judgeAssignmentRepository.findBySubmissionId(submission.getSubmissionId());
+            List<JudgeAssignment> existingAssignments = judgeAssignmentMapper.findBySubmissionId(submission.getSubmissionId());
             
             // If already has enough judges, skip
             if (existingAssignments.size() >= judgesPerSubmission) {
@@ -228,7 +232,7 @@ public class JudgeService {
                 assignment.setSubmissionId(submission.getSubmissionId());
                 assignment.setWeight(weight);
                 assignment.setScore(BigDecimal.ZERO);
-                judgeAssignmentRepository.save(assignment);
+                judgeAssignmentMapper.insert(assignment);
                 assignmentCount++;
             }
         }
@@ -241,7 +245,7 @@ public class JudgeService {
      */
     private List<User> getAllTeachers() {
         // Find TEACHER role
-        List<Role> roles = roleRepository.findAll();
+        List<Role> roles = roleMapper.findAll();
         Role teacherRole = roles.stream()
                 .filter(r -> "TEACHER".equalsIgnoreCase(r.getRoleCode()))
                 .findFirst()
@@ -252,7 +256,7 @@ public class JudgeService {
         }
         
         // Find all users with TEACHER role
-        List<UserRole> teacherUserRoles = userRoleRepository.findByRoleId(teacherRole.getRoleId());
+        List<UserRole> teacherUserRoles = userRoleMapper.findByRoleId(teacherRole.getRoleId());
         List<Integer> teacherUserIds = teacherUserRoles.stream()
                 .map(UserRole::getUserId)
                 .collect(Collectors.toList());
@@ -262,8 +266,9 @@ public class JudgeService {
         }
         
         // Return active, non-deleted teachers
-        return userRepository.findAllById(teacherUserIds).stream()
-                .filter(u -> !u.getDeleted() && UserService.STATUS_ACTIVE.equals(u.getUserStatus()))
+        return teacherUserIds.stream()
+                .map(id -> userMapper.findById(id))
+                .filter(u -> u != null && !u.getDeleted() && UserService.STATUS_ACTIVE.equals(u.getUserStatus()))
                 .collect(Collectors.toList());
     }
     
@@ -271,10 +276,10 @@ public class JudgeService {
      * Check if user has TEACHER role
      */
     private boolean hasTeacherRole(Integer userId) {
-        List<UserRole> userRoles = userRoleRepository.findByUserId(userId);
+        List<UserRole> userRoles = userRoleMapper.findByUserId(userId);
         
         for (UserRole userRole : userRoles) {
-            Role role = roleRepository.findById(userRole.getRoleId()).orElse(null);
+            Role role = roleMapper.findById(userRole.getRoleId());
             if (role != null && "TEACHER".equalsIgnoreCase(role.getRoleCode())) {
                 return true;
             }
@@ -288,12 +293,10 @@ public class JudgeService {
      */
     @Transactional
     public JudgeAssignment confirmReview(Integer userId, Integer submissionId) {
-        JudgeAssignment.JudgeAssignmentId id = new JudgeAssignment.JudgeAssignmentId();
-        id.setUserId(userId);
-        id.setSubmissionId(submissionId);
-        
-        JudgeAssignment assignment = judgeAssignmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("评审任务不存在"));
+        JudgeAssignment assignment = judgeAssignmentMapper.findById(userId, submissionId);
+        if (assignment == null) {
+            throw new RuntimeException("评审任务不存在");
+        }
         
         if ("completed".equals(assignment.getJudgeStatus())) {
             throw new RuntimeException("该评审已经确认完成，无法重复确认");
@@ -304,6 +307,7 @@ public class JudgeService {
         }
         
         assignment.setJudgeStatus("completed");
-        return judgeAssignmentRepository.save(assignment);
+        judgeAssignmentMapper.update(assignment);
+        return assignment;
     }
 }

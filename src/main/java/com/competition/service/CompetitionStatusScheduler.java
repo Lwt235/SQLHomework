@@ -1,7 +1,7 @@
 package com.competition.service;
 
 import com.competition.entity.Competition;
-import com.competition.repository.CompetitionRepository;
+import com.competition.mapper.CompetitionMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class CompetitionStatusScheduler {
     
     @Autowired
-    private CompetitionRepository competitionRepository;
+    private CompetitionMapper competitionMapper;
     
     @Autowired
     private TimeService timeService;
@@ -34,7 +34,7 @@ public class CompetitionStatusScheduler {
         LocalDateTime now = timeService.getCurrentTime();
         
         // Only load competitions that might need status updates (not already finished)
-        List<Competition> competitions = competitionRepository.findAll().stream()
+        List<Competition> competitions = competitionMapper.findAll().stream()
                 .filter(c -> !c.getDeleted() && !"finished".equals(c.getCompetitionStatus()))
                 .collect(Collectors.toList());
         
@@ -44,7 +44,7 @@ public class CompetitionStatusScheduler {
             // Only update if status changed
             if (newStatus != null && !newStatus.equals(competition.getCompetitionStatus())) {
                 competition.setCompetitionStatus(newStatus);
-                competitionRepository.save(competition);
+                competitionMapper.update(competition);
             }
         }
     }

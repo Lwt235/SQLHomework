@@ -30,6 +30,10 @@ public interface SubmissionMapper {
     @ResultMap("submissionResultMap")
     List<Submission> findByRegistrationId(Integer registrationId);
     
+    @Select("SELECT * FROM Submission WHERE submission_status = #{status} AND is_deleted = FALSE")
+    @ResultMap("submissionResultMap")
+    List<Submission> findBySubmissionStatus(String status);
+    
     @Insert("INSERT INTO Submission (registration_id, submission_title, abstract, submission_status, " +
             "submitted_at, final_locked_at, created_at, updated_at, is_deleted) " +
             "VALUES (#{registrationId}, #{submissionTitle}, #{abstractText}, #{submissionStatus}, " +

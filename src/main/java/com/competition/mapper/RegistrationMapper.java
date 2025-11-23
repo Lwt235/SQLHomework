@@ -31,6 +31,18 @@ public interface RegistrationMapper {
     @ResultMap("registrationResultMap")
     List<Registration> findByCompetitionId(Integer competitionId);
     
+    @Select("SELECT * FROM Registration WHERE user_id = #{userId} AND is_deleted = FALSE")
+    @ResultMap("registrationResultMap")
+    List<Registration> findByUserId(Integer userId);
+    
+    @Select("SELECT * FROM Registration WHERE team_id = #{teamId} AND is_deleted = FALSE")
+    @ResultMap("registrationResultMap")
+    List<Registration> findByTeamId(Integer teamId);
+    
+    @Select("SELECT * FROM Registration WHERE registration_status = #{status} AND is_deleted = FALSE")
+    @ResultMap("registrationResultMap")
+    List<Registration> findByRegistrationStatus(String status);
+    
     @Insert("INSERT INTO Registration (competition_id, team_id, user_id, audit_user_id, registration_status, " +
             "audit_time, remark, created_at, updated_at, is_deleted) " +
             "VALUES (#{competitionId}, #{teamId}, #{userId}, #{auditUserId}, #{registrationStatus}, " +

@@ -28,6 +28,10 @@ public interface AwardResultMapper {
     @ResultMap("awardResultResultMap")
     List<AwardResult> findByRegistrationId(Integer registrationId);
     
+    @Select("SELECT * FROM AwardResult WHERE award_id = #{awardId} AND is_deleted = FALSE")
+    @ResultMap("awardResultResultMap")
+    List<AwardResult> findByAwardId(Integer awardId);
+    
     @Insert("INSERT INTO AwardResult (registration_id, award_id, award_time, certificate_no, certificate_path, " +
             "created_at, updated_at, is_deleted) " +
             "VALUES (#{registrationId}, #{awardId}, #{awardTime}, #{certificateNo}, #{certificatePath}, NOW(), NOW(), FALSE)")

@@ -19,8 +19,15 @@ public interface TeamMemberMapper {
     @ResultMap("teamMemberResultMap")
     List<TeamMember> findByUserId(Integer userId);
     
+    @Select("SELECT * FROM TeamMember WHERE team_id = #{teamId} AND user_id = #{userId}")
+    @ResultMap("teamMemberResultMap")
+    TeamMember findById(@Param("teamId") Integer teamId, @Param("userId") Integer userId);
+    
     @Insert("INSERT INTO TeamMember (user_id, team_id, role_in_team) VALUES (#{userId}, #{teamId}, #{roleInTeam})")
     void insert(TeamMember teamMember);
+    
+    @Update("UPDATE TeamMember SET role_in_team = #{roleInTeam} WHERE user_id = #{userId} AND team_id = #{teamId}")
+    void update(TeamMember teamMember);
     
     @Delete("DELETE FROM TeamMember WHERE user_id = #{userId} AND team_id = #{teamId}")
     void delete(TeamMember teamMember);

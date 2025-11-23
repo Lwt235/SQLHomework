@@ -1,7 +1,7 @@
 package com.competition.service;
 
 import com.competition.entity.*;
-import com.competition.repository.*;
+import com.competition.mapper.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,19 +15,19 @@ import java.util.stream.Collectors;
 public class SoftDeleteManagementService {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
 
     @Autowired
-    private CompetitionRepository competitionRepository;
+    private CompetitionMapper competitionMapper;
 
     @Autowired
-    private RegistrationRepository registrationRepository;
+    private RegistrationMapper registrationMapper;
 
     @Autowired
-    private SubmissionRepository submissionRepository;
+    private SubmissionMapper submissionMapper;
 
     @Autowired
-    private AwardRepository awardRepository;
+    private AwardMapper awardMapper;
 
     /**
      * Get all soft-deleted entities summary
@@ -35,23 +35,23 @@ public class SoftDeleteManagementService {
     public Map<String, Integer> getSoftDeletedSummary() {
         Map<String, Integer> summary = new HashMap<>();
         
-        summary.put("users", (int) userRepository.findAll().stream()
+        summary.put("users", (int) userMapper.findAll().stream()
                 .filter(User::getDeleted)
                 .count());
         
-        summary.put("competitions", (int) competitionRepository.findAll().stream()
+        summary.put("competitions", (int) competitionMapper.findAll().stream()
                 .filter(Competition::getDeleted)
                 .count());
         
-        summary.put("registrations", (int) registrationRepository.findAll().stream()
+        summary.put("registrations", (int) registrationMapper.findAll().stream()
                 .filter(Registration::getDeleted)
                 .count());
         
-        summary.put("submissions", (int) submissionRepository.findAll().stream()
+        summary.put("submissions", (int) submissionMapper.findAll().stream()
                 .filter(Submission::getDeleted)
                 .count());
         
-        summary.put("awards", (int) awardRepository.findAll().stream()
+        summary.put("awards", (int) awardMapper.findAll().stream()
                 .filter(Award::getDeleted)
                 .count());
         
@@ -62,7 +62,7 @@ public class SoftDeleteManagementService {
      * Get all soft-deleted users
      */
     public List<User> getSoftDeletedUsers() {
-        return userRepository.findAll().stream()
+        return userMapper.findAll().stream()
                 .filter(User::getDeleted)
                 .collect(Collectors.toList());
     }
@@ -71,7 +71,7 @@ public class SoftDeleteManagementService {
      * Get all soft-deleted competitions
      */
     public List<Competition> getSoftDeletedCompetitions() {
-        return competitionRepository.findAll().stream()
+        return competitionMapper.findAll().stream()
                 .filter(Competition::getDeleted)
                 .collect(Collectors.toList());
     }
@@ -80,7 +80,7 @@ public class SoftDeleteManagementService {
      * Get all soft-deleted registrations
      */
     public List<Registration> getSoftDeletedRegistrations() {
-        return registrationRepository.findAll().stream()
+        return registrationMapper.findAll().stream()
                 .filter(Registration::getDeleted)
                 .collect(Collectors.toList());
     }
@@ -89,7 +89,7 @@ public class SoftDeleteManagementService {
      * Get all soft-deleted submissions
      */
     public List<Submission> getSoftDeletedSubmissions() {
-        return submissionRepository.findAll().stream()
+        return submissionMapper.findAll().stream()
                 .filter(Submission::getDeleted)
                 .collect(Collectors.toList());
     }
@@ -98,7 +98,7 @@ public class SoftDeleteManagementService {
      * Get all soft-deleted awards
      */
     public List<Award> getSoftDeletedAwards() {
-        return awardRepository.findAll().stream()
+        return awardMapper.findAll().stream()
                 .filter(Award::getDeleted)
                 .collect(Collectors.toList());
     }
@@ -108,14 +108,16 @@ public class SoftDeleteManagementService {
      */
     @Transactional
     public void permanentlyDeleteUser(Integer userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
         
         if (!user.getDeleted()) {
             throw new RuntimeException("只能永久删除已软删除的用户");
         }
         
-        userRepository.delete(user);
+        userMapper.deleteById(userId);
     }
 
     /**
@@ -133,14 +135,16 @@ public class SoftDeleteManagementService {
      */
     @Transactional
     public void permanentlyDeleteCompetition(Integer competitionId) {
-        Competition competition = competitionRepository.findById(competitionId)
-                .orElseThrow(() -> new RuntimeException("Competition not found"));
+        Competition competition = competitionMapper.findById(competitionId);
+        if (competition == null) {
+            throw new RuntimeException("Competition not found");
+        }
         
         if (!competition.getDeleted()) {
             throw new RuntimeException("只能永久删除已软删除的比赛");
         }
         
-        competitionRepository.delete(competition);
+        competitionMapper.deleteById(competitionId);
     }
 
     /**
@@ -158,14 +162,16 @@ public class SoftDeleteManagementService {
      */
     @Transactional
     public void permanentlyDeleteRegistration(Integer registrationId) {
-        Registration registration = registrationRepository.findById(registrationId)
-                .orElseThrow(() -> new RuntimeException("Registration not found"));
+        Registration registration = registrationMapper.findById(registrationId);
+        if (registration == null) {
+            throw new RuntimeException("Registration not found");
+        }
         
         if (!registration.getDeleted()) {
             throw new RuntimeException("只能永久删除已软删除的报名记录");
         }
         
-        registrationRepository.delete(registration);
+        registrationMapper.deleteById(registrationId);
     }
 
     /**
@@ -183,14 +189,16 @@ public class SoftDeleteManagementService {
      */
     @Transactional
     public void permanentlyDeleteSubmission(Integer submissionId) {
-        Submission submission = submissionRepository.findById(submissionId)
-                .orElseThrow(() -> new RuntimeException("Submission not found"));
+        Submission submission = submissionMapper.findById(submissionId);
+        if (submission == null) {
+            throw new RuntimeException("Submission not found");
+        }
         
         if (!submission.getDeleted()) {
             throw new RuntimeException("只能永久删除已软删除的提交记录");
         }
         
-        submissionRepository.delete(submission);
+        submissionMapper.deleteById(submissionId);
     }
 
     /**
@@ -208,14 +216,16 @@ public class SoftDeleteManagementService {
      */
     @Transactional
     public void permanentlyDeleteAward(Integer awardId) {
-        Award award = awardRepository.findById(awardId)
-                .orElseThrow(() -> new RuntimeException("Award not found"));
+        Award award = awardMapper.findById(awardId);
+        if (award == null) {
+            throw new RuntimeException("Award not found");
+        }
         
         if (!award.getDeleted()) {
             throw new RuntimeException("只能永久删除已软删除的奖项");
         }
         
-        awardRepository.delete(award);
+        awardMapper.deleteById(awardId);
     }
 
     /**

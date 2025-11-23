@@ -2,8 +2,8 @@ package com.competition.service;
 
 import com.competition.entity.Award;
 import com.competition.entity.AwardResult;
-import com.competition.repository.AwardRepository;
-import com.competition.repository.AwardResultRepository;
+import com.competition.mapper.AwardMapper;
+import com.competition.mapper.AwardResultMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -14,36 +14,40 @@ import java.util.Optional;
 public class AwardService {
 
     @Autowired
-    private AwardRepository awardRepository;
+    private AwardMapper awardMapper;
 
     @Autowired
-    private AwardResultRepository awardResultRepository;
+    private AwardResultMapper awardResultMapper;
 
     public List<Award> getAllAwards() {
-        return awardRepository.findAll();
+        return awardMapper.findAll();
     }
 
     public Optional<Award> getAwardById(Integer id) {
-        return awardRepository.findById(id);
+        return Optional.ofNullable(awardMapper.findById(id));
     }
 
     public Award createAward(Award award) {
-        return awardRepository.save(award);
+        awardMapper.insert(award);
+        return award;
     }
 
     public Award updateAward(Integer id, Award awardDetails) {
-        Award award = awardRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Award not found"));
+        Award award = awardMapper.findById(id);
+        if (award == null) {
+            throw new RuntimeException("Award not found");
+        }
 
         award.setAwardName(awardDetails.getAwardName());
         award.setAwardLevel(awardDetails.getAwardLevel());
         award.setCriteriaDescription(awardDetails.getCriteriaDescription());
 
-        return awardRepository.save(award);
+        awardMapper.update(award);
+        return award;
     }
 
     public List<Award> getAwardsByCompetition(Integer competitionId) {
-        return awardRepository.findByCompetitionId(competitionId);
+        return awardMapper.findByCompetitionId(competitionId);
     }
 
     public AwardResult grantAward(Integer registrationId, Integer awardId, String certificateNo) {
@@ -53,14 +57,15 @@ public class AwardService {
         result.setAwardTime(LocalDateTime.now());
         result.setCertificateNo(certificateNo);
 
-        return awardResultRepository.save(result);
+        awardResultMapper.insert(result);
+        return result;
     }
 
     public List<AwardResult> getAwardResultsByRegistration(Integer registrationId) {
-        return awardResultRepository.findByRegistrationId(registrationId);
+        return awardResultMapper.findByRegistrationId(registrationId);
     }
 
     public List<AwardResult> getAwardResultsByAward(Integer awardId) {
-        return awardResultRepository.findByAwardId(awardId);
+        return awardResultMapper.findByAwardId(awardId);
     }
 }
