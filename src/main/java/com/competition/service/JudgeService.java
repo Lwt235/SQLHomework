@@ -1,11 +1,16 @@
 package com.competition.service;
 
+import com.competition.dto.JudgeAssignmentWithDetailsDTO;
+import com.competition.entity.Competition;
 import com.competition.entity.JudgeAssignment;
+import com.competition.entity.Registration;
 import com.competition.entity.Submission;
 import com.competition.entity.User;
 import com.competition.entity.UserRole;
 import com.competition.entity.Role;
+import com.competition.mapper.CompetitionMapper;
 import com.competition.mapper.JudgeAssignmentMapper;
+import com.competition.mapper.RegistrationMapper;
 import com.competition.mapper.SubmissionMapper;
 import com.competition.mapper.UserMapper;
 import com.competition.mapper.UserRoleMapper;
@@ -38,6 +43,12 @@ public class JudgeService {
     
     @Autowired
     private RoleMapper roleMapper;
+    
+    @Autowired
+    private RegistrationMapper registrationMapper;
+    
+    @Autowired
+    private CompetitionMapper competitionMapper;
 
     public List<JudgeAssignment> getAllAssignments() {
         return judgeAssignmentMapper.findAll();
@@ -49,16 +60,20 @@ public class JudgeService {
     }
 
     public JudgeAssignment updateAssignment(JudgeAssignment assignment) {
-        // Get existing assignment to preserve created_at and update judgeStatus
+        // Get existing assignment to preserve created_at and weight
         JudgeAssignment existing = judgeAssignmentMapper.findById(assignment.getUserId(), assignment.getSubmissionId());
         if (existing == null) {
             throw new RuntimeException("评审任务不存在");
         }
         
-        // Update fields
+        // Update fields - preserve weight if not provided
         existing.setScore(assignment.getScore());
         existing.setComment(assignment.getComment());
-        existing.setWeight(assignment.getWeight());
+        
+        // Only update weight if explicitly provided in the request
+        if (assignment.getWeight() != null) {
+            existing.setWeight(assignment.getWeight());
+        }
         
         // Set status to "reviewed" if score is provided and not yet completed
         if (assignment.getScore() != null && !"completed".equals(existing.getJudgeStatus())) {
@@ -75,6 +90,65 @@ public class JudgeService {
 
     public List<JudgeAssignment> getAssignmentsBySubmission(Integer submissionId) {
         return judgeAssignmentMapper.findBySubmissionId(submissionId);
+    }
+    
+    /**
+     * Get all assignments with enriched data (submission title, competition name, description)
+     */
+    public List<JudgeAssignmentWithDetailsDTO> getAllAssignmentsWithDetails() {
+        List<JudgeAssignment> assignments = judgeAssignmentMapper.findAll();
+        return enrichAssignments(assignments);
+    }
+    
+    /**
+     * Get judge's assignments with enriched data
+     */
+    public List<JudgeAssignmentWithDetailsDTO> getAssignmentsByJudgeWithDetails(Integer userId) {
+        List<JudgeAssignment> assignments = judgeAssignmentMapper.findByUserId(userId);
+        return enrichAssignments(assignments);
+    }
+    
+    /**
+     * Get submission's assignments with enriched data
+     */
+    public List<JudgeAssignmentWithDetailsDTO> getAssignmentsBySubmissionWithDetails(Integer submissionId) {
+        List<JudgeAssignment> assignments = judgeAssignmentMapper.findBySubmissionId(submissionId);
+        return enrichAssignments(assignments);
+    }
+    
+    /**
+     * Enrich assignments with related submission, competition, and user data
+     */
+    private List<JudgeAssignmentWithDetailsDTO> enrichAssignments(List<JudgeAssignment> assignments) {
+        return assignments.stream()
+                .map(assignment -> {
+                    JudgeAssignmentWithDetailsDTO dto = JudgeAssignmentWithDetailsDTO.from(assignment);
+                    
+                    // Get user
+                    User user = userMapper.findById(assignment.getUserId());
+                    dto.setUser(user);
+                    
+                    // Get submission
+                    Submission submission = submissionMapper.findById(assignment.getSubmissionId());
+                    if (submission != null) {
+                        JudgeAssignmentWithDetailsDTO.SubmissionWithDetailsDTO submissionDTO = 
+                            JudgeAssignmentWithDetailsDTO.SubmissionWithDetailsDTO.from(submission);
+                        
+                        // Get registration to get competition
+                        if (submission.getRegistrationId() != null) {
+                            Registration registration = registrationMapper.findById(submission.getRegistrationId());
+                            if (registration != null && registration.getCompetitionId() != null) {
+                                Competition competition = competitionMapper.findById(registration.getCompetitionId());
+                                submissionDTO.setCompetition(competition);
+                            }
+                        }
+                        
+                        dto.setSubmission(submissionDTO);
+                    }
+                    
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
     
     /**

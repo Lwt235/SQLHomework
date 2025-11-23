@@ -172,6 +172,56 @@
         <el-button type="success" @click="submitRandomAssign" :loading="assigning">开始分配</el-button>
       </template>
     </el-dialog>
+    
+    <!-- View Detail Dialog -->
+    <el-dialog v-model="showDetailDialog" title="评审详情" width="700px">
+      <div v-if="selectedAssignment">
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="评委">
+            {{ selectedAssignment.user?.realName || selectedAssignment.user?.username || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="作品标题">
+            {{ selectedAssignment.submission?.submissionTitle || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="竞赛名称">
+            {{ selectedAssignment.submission?.competition?.competitionTitle || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="作品描述">
+            {{ selectedAssignment.submission?.description || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="权重">
+            {{ selectedAssignment.weight || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="评分">
+            <el-tag v-if="selectedAssignment.score !== null && selectedAssignment.score !== undefined" type="success">
+              {{ selectedAssignment.score }}
+            </el-tag>
+            <span v-else>未评分</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="评语">
+            {{ selectedAssignment.comment || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="评审状态">
+            <el-tag v-if="selectedAssignment.judgeStatus === 'completed'" type="success">
+              已确认
+            </el-tag>
+            <el-tag v-else-if="selectedAssignment.judgeStatus === 'reviewed'" type="warning">
+              已评分
+            </el-tag>
+            <el-tag v-else type="info">待评审</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="创建时间">
+            {{ formatDate(selectedAssignment.createdAt) }}
+          </el-descriptions-item>
+          <el-descriptions-item label="更新时间">
+            {{ formatDate(selectedAssignment.updatedAt) }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <template #footer>
+        <el-button @click="showDetailDialog = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -184,9 +234,11 @@ const assignments = ref([])
 const loading = ref(false)
 const showManualAssignDialog = ref(false)
 const showRandomAssignDialog = ref(false)
+const showDetailDialog = ref(false)
 const assigning = ref(false)
 const lockedSubmissions = ref([])
 const teachers = ref([])
+const selectedAssignment = ref(null)
 
 const manualAssignForm = ref({
   submissionId: null,
@@ -205,33 +257,9 @@ const randomAssignForm = ref({
 const loadAssignments = async () => {
   loading.value = true
   try {
-    const response = await judgeAPI.getAllAssignments()
+    const response = await judgeAPI.getAllAssignmentsWithDetails()
     if (response.success) {
-      // Load users and submissions to populate names
-      const usersResponse = await userAPI.getAllUsers()
-      const submissionsResponse = await submissionAPI.getAllSubmissions()
-      
-      const usersMap = {}
-      const submissionsMap = {}
-      
-      if (usersResponse.success) {
-        usersResponse.data.forEach(user => {
-          usersMap[user.userId] = user
-        })
-      }
-      
-      if (submissionsResponse.success) {
-        submissionsResponse.data.forEach(submission => {
-          submissionsMap[submission.submissionId] = submission
-        })
-      }
-      
-      // Enrich assignment data with user and submission objects
-      assignments.value = response.data.map(assignment => ({
-        ...assignment,
-        user: usersMap[assignment.userId] || null,
-        submission: submissionsMap[assignment.submissionId] || null
-      }))
+      assignments.value = response.data
     }
   } catch (error) {
     ElMessage.error('加载评审列表失败')
@@ -343,7 +371,13 @@ const submitRandomAssign = async () => {
 }
 
 const viewDetail = (assignment) => {
-  ElMessage.info('查看详情功能开发中')
+  selectedAssignment.value = assignment
+  showDetailDialog.value = true
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleString('zh-CN')
 }
 
 onMounted(async () => {

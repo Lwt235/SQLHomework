@@ -120,6 +120,9 @@ export const judgeAPI = {
   getAllAssignments() {
     return api.get('/judge/assignments')
   },
+  getAllAssignmentsWithDetails() {
+    return api.get('/judge/assignments/details')
+  },
   createAssignment(data) {
     return api.post('/judge/assignments', data)
   },
@@ -128,6 +131,9 @@ export const judgeAPI = {
   },
   getAssignmentsByJudge(userId) {
     return api.get(`/judge/assignments/judge/${userId}`)
+  },
+  getAssignmentsByJudgeWithDetails(userId) {
+    return api.get(`/judge/assignments/judge/${userId}/details`)
   },
   getAssignmentsBySubmission(submissionId) {
     return api.get(`/judge/assignments/submission/${submissionId}`)
