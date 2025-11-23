@@ -3,9 +3,9 @@ package com.competition.service;
 import com.competition.entity.User;
 import com.competition.entity.UserRole;
 import com.competition.entity.Role;
-import com.competition.repository.UserRepository;
-import com.competition.repository.UserRoleRepository;
-import com.competition.repository.RoleRepository;
+import com.competition.mapper.UserMapper;
+import com.competition.mapper.UserRoleMapper;
+import com.competition.mapper.RoleMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,16 +25,16 @@ public class UserService {
     private static final List<String> ALLOWED_STATUSES = Arrays.asList(STATUS_ACTIVE, STATUS_INACTIVE, STATUS_SUSPENDED);
 
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
 
     @Autowired
-    private UserRoleRepository userRoleRepository;
+    private UserRoleMapper userRoleMapper;
 
     @Autowired
-    private RoleRepository roleRepository;
+    private RoleMapper roleMapper;
 
     public List<User> getAllUsers() {
-        return userRepository.findAll().stream()
+        return userMapper.findAll().stream()
                 .filter(user -> !user.getDeleted())
                 .collect(Collectors.toList());
     }
@@ -59,13 +59,13 @@ public class UserService {
         
         if (roleCode != null && !roleCode.trim().isEmpty()) {
             // Filter by role
-            Role role = roleRepository.findAll().stream()
+            Role role = roleMapper.findAll().stream()
                     .filter(r -> roleCode.equalsIgnoreCase(r.getRoleCode()))
                     .findFirst()
                     .orElse(null);
             
             if (role != null) {
-                List<UserRole> userRolesForRole = userRoleRepository.findByRoleId(role.getRoleId());
+                List<UserRole> userRolesForRole = userRoleMapper.findByRoleId(role.getRoleId());
                 List<Integer> userIdsWithRole = userRolesForRole.stream()
                         .map(UserRole::getUserId)
                         .collect(Collectors.toList());
@@ -115,14 +115,17 @@ public class UserService {
     }
 
     public List<User> getInactiveUsers() {
-        return userRepository.findAll().stream()
+        return userMapper.findAll().stream()
                 .filter(user -> !user.getDeleted() && STATUS_INACTIVE.equals(user.getUserStatus()))
                 .collect(Collectors.toList());
     }
 
     public User getUserById(Integer userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+        return user;
     }
 
     public User updateUserProfile(Integer userId, Map<String, Object> updates) {
@@ -133,11 +136,10 @@ public class UserService {
             String newUsername = (String) updates.get("username");
             if (newUsername != null && !newUsername.trim().isEmpty()) {
                 // Check if username is already used by another user
-                userRepository.findByUsername(newUsername).ifPresent(existingUser -> {
-                    if (!existingUser.getUserId().equals(userId)) {
-                        throw new RuntimeException("用户名已被其他用户使用");
-                    }
-                });
+                User existingUser = userMapper.findByUsername(newUsername);
+                if (existingUser != null && !existingUser.getUserId().equals(userId)) {
+                    throw new RuntimeException("用户名已被其他用户使用");
+                }
                 user.setUsername(newUsername);
             }
         }
@@ -151,11 +153,10 @@ public class UserService {
             String email = (String) updates.get("email");
             if (email != null && !email.isEmpty()) {
                 // Check if email is already used by another user
-                userRepository.findByEmail(email).ifPresent(existingUser -> {
-                    if (!existingUser.getUserId().equals(userId)) {
-                        throw new RuntimeException("邮箱已被其他用户使用");
-                    }
-                });
+                User existingUser = userMapper.findByEmail(email);
+                if (existingUser != null && !existingUser.getUserId().equals(userId)) {
+                    throw new RuntimeException("邮箱已被其他用户使用");
+                }
             }
             user.setEmail(email);
         }
@@ -176,7 +177,8 @@ public class UserService {
             user.setStudentNo(studentNo);
         }
         
-        return userRepository.save(user);
+        userMapper.update(user);
+        return user;
     }
 
     public User updateUserStatus(Integer userId, String status) {
@@ -193,7 +195,8 @@ public class UserService {
         }
         
         user.setUserStatus(status);
-        return userRepository.save(user);
+        userMapper.update(user);
+        return user;
     }
 
     public User activateUser(Integer userId) {
@@ -207,7 +210,7 @@ public class UserService {
     public void deleteUser(Integer userId) {
         User user = getUserById(userId);
         user.setDeleted(true);
-        userRepository.save(user);
+        userMapper.update(user);
     }
 
     @Transactional
@@ -215,37 +218,40 @@ public class UserService {
         User user = getUserById(userId);
         
         // Remove existing roles
-        List<UserRole> existingRoles = userRoleRepository.findByUserId(userId);
+        List<UserRole> existingRoles = userRoleMapper.findByUserId(userId);
         if (!existingRoles.isEmpty()) {
-            userRoleRepository.deleteAll(existingRoles);
+            userRoleMapper.deleteByUserId(userId);
         }
         
         // Add new roles
         if (roleIds != null && !roleIds.isEmpty()) {
-            List<Role> roles = roleRepository.findAllById(roleIds);
+            // Validate all roles exist
+            List<Role> roles = roleIds.stream()
+                    .map(roleId -> roleMapper.findById(roleId))
+                    .filter(role -> role != null)
+                    .collect(Collectors.toList());
+            
             if (roles.size() != roleIds.size()) {
                 throw new RuntimeException("Some role IDs are invalid");
             }
             
-            List<UserRole> newUserRoles = new java.util.ArrayList<>();
             for (Integer roleId : roleIds) {
                 UserRole userRole = new UserRole();
                 userRole.setUserId(userId);
                 userRole.setRoleId(roleId);
-                newUserRoles.add(userRole);
+                userRoleMapper.insert(userRole);
             }
-            userRoleRepository.saveAll(newUserRoles);
         }
     }
 
     public List<Role> getAllRoles() {
-        return roleRepository.findAll().stream()
+        return roleMapper.findAll().stream()
                 .filter(role -> !role.getDeleted())
                 .collect(Collectors.toList());
     }
 
     public List<Role> getUserRoles(Integer userId) {
-        List<UserRole> userRoles = userRoleRepository.findByUserId(userId);
+        List<UserRole> userRoles = userRoleMapper.findByUserId(userId);
         List<Integer> roleIds = userRoles.stream()
                 .map(UserRole::getRoleId)
                 .collect(Collectors.toList());
@@ -254,8 +260,9 @@ public class UserService {
             return java.util.Collections.emptyList();
         }
         
-        return roleRepository.findAllById(roleIds).stream()
-                .filter(role -> !role.getDeleted())
+        return roleIds.stream()
+                .map(roleId -> roleMapper.findById(roleId))
+                .filter(role -> role != null && !role.getDeleted())
                 .collect(Collectors.toList());
     }
 }

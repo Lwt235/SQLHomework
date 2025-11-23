@@ -6,9 +6,9 @@ import com.competition.dto.RegisterRequest;
 import com.competition.entity.User;
 import com.competition.entity.UserRole;
 import com.competition.entity.Role;
-import com.competition.repository.UserRepository;
-import com.competition.repository.UserRoleRepository;
-import com.competition.repository.RoleRepository;
+import com.competition.mapper.UserMapper;
+import com.competition.mapper.UserRoleMapper;
+import com.competition.mapper.RoleMapper;
 import com.competition.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class AuthService {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -37,15 +37,17 @@ public class AuthService {
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    private UserRoleRepository userRoleRepository;
+    private UserRoleMapper userRoleMapper;
 
     @Autowired
-    private RoleRepository roleRepository;
+    private RoleMapper roleMapper;
 
     public JwtResponse login(LoginRequest request) {
         // First check if user exists and get their status
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("用户名或密码错误"));
+        User user = userMapper.findByUsername(request.getUsername());
+        if (user == null) {
+            throw new RuntimeException("用户名或密码错误");
+        }
         
         // Check if user is deleted
         if (user.getDeleted()) {
@@ -70,14 +72,16 @@ public class AuthService {
         String token = tokenProvider.generateToken(user.getUsername(), user.getUserId());
 
         // Get user roles - optimized to avoid N+1 queries
-        List<UserRole> userRoles = userRoleRepository.findByUserId(user.getUserId());
+        List<UserRole> userRoles = userRoleMapper.findByUserId(user.getUserId());
         List<Integer> roleIds = userRoles.stream()
                 .map(UserRole::getRoleId)
                 .collect(Collectors.toList());
         
         List<String> roleCodes = roleIds.isEmpty() ? 
                 java.util.Collections.emptyList() :
-                roleRepository.findAllById(roleIds).stream()
+                roleIds.stream()
+                        .map(roleId -> roleMapper.findById(roleId))
+                        .filter(role -> role != null)
                         .map(Role::getRoleCode)
                         .collect(Collectors.toList());
 
@@ -85,11 +89,11 @@ public class AuthService {
     }
 
     public User register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
+        if (userMapper.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
 
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userMapper.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
 
@@ -105,22 +109,29 @@ public class AuthService {
         user.setUserStatus(UserService.STATUS_INACTIVE);  // Changed from "active" to "inactive" - requires admin approval
         user.setAuthType("local");
 
-        return userRepository.save(user);
+        userMapper.insert(user);
+        return user;
     }
 
     @Transactional
     public void deactivateAccount(Integer userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
         
         // Check if user has admin role
-        List<UserRole> userRoles = userRoleRepository.findByUserId(userId);
+        List<UserRole> userRoles = userRoleMapper.findByUserId(userId);
         List<Integer> roleIds = userRoles.stream()
                 .map(UserRole::getRoleId)
                 .collect(Collectors.toList());
         
         if (!roleIds.isEmpty()) {
-            List<Role> roles = roleRepository.findAllById(roleIds);
+            List<Role> roles = roleIds.stream()
+                    .map(roleId -> roleMapper.findById(roleId))
+                    .filter(role -> role != null)
+                    .collect(Collectors.toList());
+            
             boolean isAdmin = roles.stream()
                     .anyMatch(role -> "admin".equalsIgnoreCase(role.getRoleCode()));
             
@@ -131,6 +142,6 @@ public class AuthService {
         
         // Soft delete the account
         user.setDeleted(true);
-        userRepository.save(user);
+        userMapper.update(user);
     }
 }
