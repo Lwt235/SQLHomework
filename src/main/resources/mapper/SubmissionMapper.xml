@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.competition.mapper.SubmissionMapper">
+
+    <!-- Result Map -->
+    <resultMap id="submissionResultMap" type="com.competition.entity.Submission">
+        <id property="submissionId" column="submission_id"/>
+        <result property="registrationId" column="registration_id"/>
+        <result property="submissionTitle" column="submission_title"/>
+        <result property="abstractText" column="abstract"/>
+        <result property="submissionStatus" column="submission_status"/>
+        <result property="submittedAt" column="submitted_at"/>
+        <result property="finalLockedAt" column="final_locked_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="is_deleted"/>
+    </resultMap>
+
+    <!-- Select All -->
+    <select id="findAll" resultMap="submissionResultMap">
+        SELECT * FROM Submission WHERE is_deleted = FALSE
+    </select>
+
+    <!-- Select By Id -->
+    <select id="findById" resultMap="submissionResultMap">
+        SELECT * FROM Submission 
+        WHERE submission_id = #{submissionId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By Registration Id -->
+    <select id="findByRegistrationId" resultMap="submissionResultMap">
+        SELECT * FROM Submission 
+        WHERE registration_id = #{registrationId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By Submission Status -->
+    <select id="findBySubmissionStatus" resultMap="submissionResultMap">
+        SELECT * FROM Submission 
+        WHERE submission_status = #{status} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="submissionId" keyColumn="submission_id">
+        INSERT INTO Submission (
+            registration_id, submission_title, abstract, submission_status,
+            submitted_at, final_locked_at, created_at, updated_at, is_deleted
+        ) VALUES (
+            #{registrationId}, #{submissionTitle}, #{abstractText}, #{submissionStatus},
+            #{submittedAt}, #{finalLockedAt}, NOW(), NOW(), FALSE
+        )
+    </insert>
+
+    <!-- Update -->
+    <update id="update">
+        UPDATE Submission 
+        SET registration_id = #{registrationId},
+            submission_title = #{submissionTitle},
+            abstract = #{abstractText},
+            submission_status = #{submissionStatus},
+            submitted_at = #{submittedAt},
+            final_locked_at = #{finalLockedAt},
+            updated_at = NOW()
+        WHERE submission_id = #{submissionId}
+    </update>
+
+    <!-- Delete By Id (Soft Delete) -->
+    <update id="deleteById">
+        UPDATE Submission 
+        SET is_deleted = TRUE 
+        WHERE submission_id = #{submissionId}
+    </update>
+
+</mapper>

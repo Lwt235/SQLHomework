@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.competition.mapper.UserMapper">
+
+    <!-- Result Map -->
+    <resultMap id="userResultMap" type="com.competition.entity.User">
+        <id property="userId" column="user_id"/>
+        <result property="userStatus" column="user_status"/>
+        <result property="username" column="username"/>
+        <result property="passwordHash" column="password_hash"/>
+        <result property="realName" column="real_name"/>
+        <result property="email" column="email"/>
+        <result property="phone" column="phone"/>
+        <result property="school" column="school"/>
+        <result property="department" column="department"/>
+        <result property="studentNo" column="student_no"/>
+        <result property="authType" column="auth_type"/>
+        <result property="lastLoginAt" column="last_login_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="is_deleted"/>
+    </resultMap>
+
+    <!-- Select All -->
+    <select id="findAll" resultMap="userResultMap">
+        SELECT * FROM User WHERE is_deleted = FALSE
+    </select>
+
+    <!-- Select By Id -->
+    <select id="findById" resultMap="userResultMap">
+        SELECT * FROM User WHERE user_id = #{userId}
+    </select>
+
+    <!-- Select By Username -->
+    <select id="findByUsername" resultMap="userResultMap">
+        SELECT * FROM User WHERE username = #{username}
+    </select>
+
+    <!-- Select By Email -->
+    <select id="findByEmail" resultMap="userResultMap">
+        SELECT * FROM User WHERE email = #{email}
+    </select>
+
+    <!-- Check Exists By Username -->
+    <select id="existsByUsername" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM User WHERE username = #{username}
+    </select>
+
+    <!-- Check Exists By Email -->
+    <select id="existsByEmail" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM User WHERE email = #{email}
+    </select>
+
+    <!-- Search By Username Or Id -->
+    <select id="searchByUsernameOrId" resultMap="userResultMap">
+        SELECT * FROM User 
+        WHERE is_deleted = FALSE 
+          AND user_status = 'active'
+          AND (LOWER(username) LIKE CONCAT('%', LOWER(#{query}), '%')
+               OR CAST(user_id AS CHAR) LIKE CONCAT('%', #{query}, '%'))
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="userId" keyColumn="user_id">
+        INSERT INTO User (
+            user_status, username, password_hash, real_name, email, phone,
+            school, department, student_no, auth_type, last_login_at,
+            created_at, updated_at, is_deleted
+        ) VALUES (
+            #{userStatus}, #{username}, #{passwordHash}, #{realName}, #{email}, #{phone},
+            #{school}, #{department}, #{studentNo}, #{authType}, #{lastLoginAt},
+            NOW(), NOW(), FALSE
+        )
+    </insert>
+
+    <!-- Update -->
+    <update id="update">
+        UPDATE User 
+        SET user_status = #{userStatus},
+            username = #{username},
+            password_hash = #{passwordHash},
+            real_name = #{realName},
+            email = #{email},
+            phone = #{phone},
+            school = #{school},
+            department = #{department},
+            student_no = #{studentNo},
+            auth_type = #{authType},
+            last_login_at = #{lastLoginAt},
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- Delete By Id (Soft Delete) -->
+    <update id="deleteById">
+        UPDATE User 
+        SET is_deleted = TRUE 
+        WHERE user_id = #{userId}
+    </update>
+
+</mapper>

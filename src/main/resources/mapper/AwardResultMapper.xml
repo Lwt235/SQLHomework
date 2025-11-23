@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.competition.mapper.AwardResultMapper">
+
+    <!-- Result Map -->
+    <resultMap id="awardResultResultMap" type="com.competition.entity.AwardResult">
+        <result property="registrationId" column="registration_id"/>
+        <result property="awardId" column="award_id"/>
+        <result property="awardTime" column="award_time"/>
+        <result property="certificateNo" column="certificate_no"/>
+        <result property="certificatePath" column="certificate_path"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="is_deleted"/>
+    </resultMap>
+
+    <!-- Select All -->
+    <select id="findAll" resultMap="awardResultResultMap">
+        SELECT * FROM AwardResult WHERE is_deleted = FALSE
+    </select>
+
+    <!-- Select By Id -->
+    <select id="findById" resultMap="awardResultResultMap">
+        SELECT * FROM AwardResult 
+        WHERE registration_id = #{registrationId} 
+          AND award_id = #{awardId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By Registration Id -->
+    <select id="findByRegistrationId" resultMap="awardResultResultMap">
+        SELECT * FROM AwardResult 
+        WHERE registration_id = #{registrationId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By Award Id -->
+    <select id="findByAwardId" resultMap="awardResultResultMap">
+        SELECT * FROM AwardResult 
+        WHERE award_id = #{awardId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert">
+        INSERT INTO AwardResult (
+            registration_id, award_id, award_time, certificate_no, certificate_path,
+            created_at, updated_at, is_deleted
+        ) VALUES (
+            #{registrationId}, #{awardId}, #{awardTime}, #{certificateNo}, #{certificatePath},
+            NOW(), NOW(), FALSE
+        )
+    </insert>
+
+    <!-- Update -->
+    <update id="update">
+        UPDATE AwardResult 
+        SET award_time = #{awardTime},
+            certificate_no = #{certificateNo},
+            certificate_path = #{certificatePath},
+            updated_at = NOW()
+        WHERE registration_id = #{registrationId} 
+          AND award_id = #{awardId}
+    </update>
+
+    <!-- Delete By Id (Soft Delete) -->
+    <update id="deleteById">
+        UPDATE AwardResult 
+        SET is_deleted = TRUE 
+        WHERE registration_id = #{registrationId} 
+          AND award_id = #{awardId}
+    </update>
+
+</mapper>

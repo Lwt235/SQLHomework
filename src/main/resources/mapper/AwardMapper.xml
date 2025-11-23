@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.competition.mapper.AwardMapper">
+
+    <!-- Result Map -->
+    <resultMap id="awardResultMap" type="com.competition.entity.Award">
+        <id property="awardId" column="award_id"/>
+        <result property="competitionId" column="competition_id"/>
+        <result property="awardName" column="award_name"/>
+        <result property="awardLevel" column="award_level"/>
+        <result property="criteriaDescription" column="criteria_description"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="is_deleted"/>
+    </resultMap>
+
+    <!-- Select All -->
+    <select id="findAll" resultMap="awardResultMap">
+        SELECT * FROM Award WHERE is_deleted = FALSE
+    </select>
+
+    <!-- Select By Id -->
+    <select id="findById" resultMap="awardResultMap">
+        SELECT * FROM Award 
+        WHERE award_id = #{awardId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Select By Competition Id -->
+    <select id="findByCompetitionId" resultMap="awardResultMap">
+        SELECT * FROM Award 
+        WHERE competition_id = #{competitionId} 
+          AND is_deleted = FALSE
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="awardId" keyColumn="award_id">
+        INSERT INTO Award (
+            competition_id, award_name, award_level, criteria_description,
+            created_at, updated_at, is_deleted
+        ) VALUES (
+            #{competitionId}, #{awardName}, #{awardLevel}, #{criteriaDescription},
+            NOW(), NOW(), FALSE
+        )
+    </insert>
+
+    <!-- Update -->
+    <update id="update">
+        UPDATE Award 
+        SET competition_id = #{competitionId},
+            award_name = #{awardName},
+            award_level = #{awardLevel},
+            criteria_description = #{criteriaDescription},
+            updated_at = NOW()
+        WHERE award_id = #{awardId}
+    </update>
+
+    <!-- Delete By Id (Soft Delete) -->
+    <update id="deleteById">
+        UPDATE Award 
+        SET is_deleted = TRUE 
+        WHERE award_id = #{awardId}
+    </update>
+
+</mapper>
