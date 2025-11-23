@@ -118,15 +118,20 @@ public class JudgeService {
     
     /**
      * Enrich assignments with related submission, competition, and user data
+     * 
+     * NOTE: This method has N+1 query performance characteristics. For production use with large datasets,
+     * consider implementing a custom MyBatis mapper with JOIN queries to fetch all related data in a single query.
      */
     private List<JudgeAssignmentWithDetailsDTO> enrichAssignments(List<JudgeAssignment> assignments) {
         return assignments.stream()
                 .map(assignment -> {
                     JudgeAssignmentWithDetailsDTO dto = JudgeAssignmentWithDetailsDTO.from(assignment);
                     
-                    // Get user
+                    // Get user - handle null case
                     User user = userMapper.findById(assignment.getUserId());
-                    dto.setUser(user);
+                    if (user != null) {
+                        dto.setUser(user);
+                    }
                     
                     // Get submission
                     Submission submission = submissionMapper.findById(assignment.getSubmissionId());

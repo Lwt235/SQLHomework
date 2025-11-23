@@ -193,7 +193,7 @@
             {{ selectedAssignment.weight || '-' }}
           </el-descriptions-item>
           <el-descriptions-item label="评分">
-            <el-tag v-if="selectedAssignment.score !== null && selectedAssignment.score !== undefined" type="success">
+            <el-tag v-if="selectedAssignment.score != null" type="success">
               {{ selectedAssignment.score }}
             </el-tag>
             <span v-else>未评分</span>
