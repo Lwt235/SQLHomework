@@ -5,11 +5,11 @@ import com.competition.entity.Registration;
 import com.competition.entity.Competition;
 import com.competition.entity.TeamMember;
 import com.competition.entity.JudgeAssignment;
-import com.competition.repository.SubmissionRepository;
-import com.competition.repository.RegistrationRepository;
-import com.competition.repository.CompetitionRepository;
-import com.competition.repository.TeamMemberRepository;
-import com.competition.repository.JudgeAssignmentRepository;
+import com.competition.mapper.SubmissionMapper;
+import com.competition.mapper.RegistrationMapper;
+import com.competition.mapper.CompetitionMapper;
+import com.competition.mapper.TeamMemberMapper;
+import com.competition.mapper.JudgeAssignmentMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,31 +22,31 @@ import java.util.Optional;
 public class SubmissionService {
 
     @Autowired
-    private SubmissionRepository submissionRepository;
+    private SubmissionMapper submissionMapper;
     
     @Autowired
-    private RegistrationRepository registrationRepository;
+    private RegistrationMapper registrationMapper;
     
     @Autowired
-    private CompetitionRepository competitionRepository;
+    private CompetitionMapper competitionMapper;
     
     @Autowired
-    private TeamMemberRepository teamMemberRepository;
+    private TeamMemberMapper teamMemberMapper;
     
     @Autowired
-    private JudgeAssignmentRepository judgeAssignmentRepository;
+    private JudgeAssignmentMapper judgeAssignmentMapper;
 
     public List<Submission> getAllSubmissions() {
-        return submissionRepository.findAll();
+        return submissionMapper.findAll();
     }
 
     public Optional<Submission> getSubmissionById(Integer id) {
-        return submissionRepository.findById(id);
+        return Optional.ofNullable(submissionMapper.findById(id));
     }
 
     public Submission createSubmission(Submission submission) {
         // Check if registration already has a locked submission
-        List<Submission> existingSubmissions = submissionRepository.findByRegistrationId(submission.getRegistrationId());
+        List<Submission> existingSubmissions = submissionMapper.findByRegistrationId(submission.getRegistrationId());
         boolean hasLockedSubmission = existingSubmissions.stream()
                 .anyMatch(s -> s.getFinalLockedAt() != null || "locked".equals(s.getSubmissionStatus()));
         
@@ -55,12 +55,15 @@ public class SubmissionService {
         }
         
         submission.setSubmissionStatus("draft");
-        return submissionRepository.save(submission);
+        submissionMapper.update(submission); return submission;
+        return submission;
     }
 
     public Submission updateSubmission(Integer id, Submission submissionDetails) {
-        Submission submission = submissionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Submission not found"));
+        Submission submission = submissionMapper.findById(id);
+        if (submission == null) {
+            throw new RuntimeException("Submission not found");
+        }
 
         // Check if submission is locked - if so, prevent editing
         if (submission.getFinalLockedAt() != null) {
@@ -71,11 +74,12 @@ public class SubmissionService {
         submission.setAbstractText(submissionDetails.getAbstractText());
         submission.setSubmissionStatus(submissionDetails.getSubmissionStatus());
 
-        return submissionRepository.save(submission);
+        submissionMapper.update(submission);
+        return submission;
     }
 
     public Submission submitWork(Integer id, Integer userId) {
-        Submission submission = submissionRepository.findById(id)
+        Submission submission = submissionMapper.findById(id)
                 .orElseThrow(() -> new RuntimeException("Submission not found"));
 
         // Check if submission is locked
@@ -89,10 +93,10 @@ public class SubmissionService {
         }
         
         // Check if competition submission period is valid
-        Registration registration = registrationRepository.findById(submission.getRegistrationId())
+        Registration registration = registrationMapper.findById(submission.getRegistrationId())
                 .orElseThrow(() -> new RuntimeException("报名信息不存在"));
         
-        Competition competition = competitionRepository.findById(registration.getCompetitionId())
+        Competition competition = competitionMapper.findById(registration.getCompetitionId())
                 .orElseThrow(() -> new RuntimeException("竞赛信息不存在"));
         
         LocalDateTime now = LocalDateTime.now();
@@ -110,12 +114,12 @@ public class SubmissionService {
         submission.setSubmissionStatus("submitted");
         submission.setSubmittedAt(LocalDateTime.now());
 
-        return submissionRepository.save(submission);
+        return submissionMapper.update(submission); return submission;
     }
 
     @Transactional
     public Submission lockSubmission(Integer id, Integer userId) {
-        Submission submission = submissionRepository.findById(id)
+        Submission submission = submissionMapper.findById(id)
                 .orElseThrow(() -> new RuntimeException("Submission not found"));
 
         // Check if already locked
@@ -133,14 +137,14 @@ public class SubmissionService {
         submission.setSubmissionStatus("locked");
         
         // Save the locked submission
-        Submission lockedSubmission = submissionRepository.save(submission);
+        Submission lockedSubmission = submissionMapper.update(submission); return submission;
         
         // Set other submissions for this registration as invalid
         List<Submission> otherSubmissions = submissionRepository.findByRegistrationId(submission.getRegistrationId());
         for (Submission other : otherSubmissions) {
             if (!other.getSubmissionId().equals(id) && other.getFinalLockedAt() == null) {
                 other.setSubmissionStatus("invalid");
-                submissionRepository.save(other);
+                submissionMapper.insert(other);
             }
         }
 
@@ -153,7 +157,7 @@ public class SubmissionService {
      * For team registration: user must be the team leader
      */
     public boolean canUserModifySubmission(Integer registrationId, Integer userId) {
-        Registration registration = registrationRepository.findById(registrationId)
+        Registration registration = registrationMapper.findById(registrationId)
                 .orElseThrow(() -> new RuntimeException("Registration not found"));
         
         // Individual registration
@@ -182,7 +186,7 @@ public class SubmissionService {
      * For team registration: user must be a team member
      */
     public boolean canUserViewSubmission(Integer registrationId, Integer userId) {
-        Registration registration = registrationRepository.findById(registrationId)
+        Registration registration = registrationMapper.findById(registrationId)
                 .orElseThrow(() -> new RuntimeException("Registration not found"));
         
         // Individual registration

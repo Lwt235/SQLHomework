@@ -7,12 +7,12 @@ import com.competition.entity.User;
 import com.competition.entity.UserRole;
 import com.competition.entity.Role;
 import com.competition.entity.TeamMember;
-import com.competition.repository.RegistrationRepository;
-import com.competition.repository.CompetitionRepository;
-import com.competition.repository.UserRepository;
-import com.competition.repository.UserRoleRepository;
-import com.competition.repository.RoleRepository;
-import com.competition.repository.TeamMemberRepository;
+import com.competition.mapper.RegistrationMapper;
+import com.competition.mapper.CompetitionMapper;
+import com.competition.mapper.UserMapper;
+import com.competition.mapper.UserRoleMapper;
+import com.competition.mapper.RoleMapper;
+import com.competition.mapper.TeamMemberMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -24,37 +24,39 @@ import java.util.stream.Collectors;
 public class RegistrationService {
 
     @Autowired
-    private RegistrationRepository registrationRepository;
+    private RegistrationMapper registrationMapper;
     
     @Autowired
-    private CompetitionRepository competitionRepository;
+    private CompetitionMapper competitionMapper;
     
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
     
     @Autowired
-    private UserRoleRepository userRoleRepository;
+    private UserRoleMapper userRoleMapper;
     
     @Autowired
-    private RoleRepository roleRepository;
+    private RoleMapper roleMapper;
     
     @Autowired
-    private TeamMemberRepository teamMemberRepository;
+    private TeamMemberMapper teamMemberMapper;
 
     public List<Registration> getAllRegistrations() {
-        return registrationRepository.findAll().stream()
+        return registrationMapper.findAll().stream()
                 .filter(registration -> !registration.getDeleted())
                 .collect(Collectors.toList());
     }
 
     public Optional<Registration> getRegistrationById(Integer id) {
-        return registrationRepository.findById(id);
+        return Optional.ofNullable(registrationMapper.findById(id));
     }
 
     public Registration createRegistration(Registration registration) {
         // Validate competition exists and is not deleted
-        Competition competition = competitionRepository.findById(registration.getCompetitionId())
-                .orElseThrow(() -> new RuntimeException("比赛不存在"));
+        Competition competition = competitionMapper.findById(registration.getCompetitionId());
+        if (competition == null) {
+            throw new RuntimeException("比赛不存在");
+        }
         
         if (competition.getDeleted()) {
             throw new RuntimeException("该比赛已被删除，无法报名");
@@ -72,8 +74,10 @@ public class RegistrationService {
         
         // Individual registration
         if (registration.getUserId() != null && registration.getTeamId() == null) {
-            User user = userRepository.findById(registration.getUserId())
-                    .orElseThrow(() -> new RuntimeException("用户不存在"));
+            User user = userMapper.findById(registration.getUserId());
+            if (user == null) {
+                throw new RuntimeException("用户不存在");
+            }
             
             if (user.getDeleted()) {
                 throw new RuntimeException("用户账号已被删除");
@@ -84,11 +88,11 @@ public class RegistrationService {
             }
             
             // Check if user has student role
-            List<UserRole> userRoles = userRoleRepository.findByUserId(registration.getUserId());
+            List<UserRole> userRoles = userRoleMapper.findByUserId(registration.getUserId());
             boolean isStudent = false;
             for (UserRole userRole : userRoles) {
-                Optional<Role> role = roleRepository.findById(userRole.getRoleId());
-                if (role.isPresent() && "STUDENT".equalsIgnoreCase(role.get().getRoleCode())) {
+                Role role = roleMapper.findById(userRole.getRoleId());
+                if (role != null && "STUDENT".equalsIgnoreCase(role.getRoleCode())) {
                     isStudent = true;
                     break;
                 }
@@ -107,7 +111,7 @@ public class RegistrationService {
         // Team registration
         if (registration.getTeamId() != null) {
             // Get all team members
-            List<TeamMember> teamMembers = teamMemberRepository.findByTeamId(registration.getTeamId());
+            List<TeamMember> teamMembers = teamMemberMapper.findByTeamId(registration.getTeamId());
             if (teamMembers.isEmpty()) {
                 throw new RuntimeException("团队没有成员，无法报名");
             }
@@ -115,7 +119,7 @@ public class RegistrationService {
             // Check if any team member has already registered for this competition
             for (TeamMember member : teamMembers) {
                 if (hasUserRegisteredForCompetition(member.getUserId(), registration.getCompetitionId())) {
-                    User user = userRepository.findById(member.getUserId()).orElse(null);
+                    User user = userMapper.findById(member.getUserId());
                     String username = user != null ? user.getUsername() : "ID:" + member.getUserId();
                     throw new RuntimeException("团队成员 " + username + " 已经报名了该比赛（个人或其他团队），无法重复报名");
                 }
@@ -123,7 +127,8 @@ public class RegistrationService {
         }
         
         registration.setRegistrationStatus("pending");
-        return registrationRepository.save(registration);
+        registrationMapper.insert(registration);
+        return registration;
     }
     
     /**
@@ -142,7 +147,7 @@ public class RegistrationService {
         }
         
         // Check team registrations
-        List<TeamMember> userTeams = teamMemberRepository.findByUserId(userId);
+        List<TeamMember> userTeams = teamMemberMapper.findByUserId(userId);
         List<Integer> userTeamIds = userTeams.stream()
                 .map(TeamMember::getTeamId)
                 .collect(Collectors.toList());
@@ -157,18 +162,21 @@ public class RegistrationService {
     }
 
     public Registration updateRegistrationStatus(Integer id, String status, Integer auditUserId) {
-        Registration registration = registrationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Registration not found"));
+        Registration registration = registrationMapper.findById(id);
+        if (registration == null) {
+            throw new RuntimeException("Registration not found");
+        }
 
         registration.setRegistrationStatus(status);
         registration.setAuditUserId(auditUserId);
         registration.setAuditTime(LocalDateTime.now());
 
-        return registrationRepository.save(registration);
+        registrationMapper.update(registration);
+        return registration;
     }
 
     public List<Registration> getRegistrationsByCompetition(Integer competitionId) {
-        return registrationRepository.findByCompetitionId(competitionId);
+        return registrationMapper.findByCompetitionId(competitionId);
     }
 
     public List<RegistrationWithCompetitionDTO> getRegistrationsByUser(Integer userId) {
@@ -176,7 +184,7 @@ public class RegistrationService {
         List<Registration> directRegistrations = registrationRepository.findByUserId(userId);
         
         // Get team-based registrations where user is a member
-        List<TeamMember> teamMemberships = teamMemberRepository.findByUserId(userId);
+        List<TeamMember> teamMemberships = teamMemberMapper.findByUserId(userId);
         List<Integer> teamIds = teamMemberships.stream()
                 .map(TeamMember::getTeamId)
                 .collect(Collectors.toList());
@@ -206,8 +214,7 @@ public class RegistrationService {
         // Map to DTOs with competition details
         return allRegistrations.stream()
                 .map(reg -> {
-                    Competition competition = competitionRepository.findById(reg.getCompetitionId())
-                            .orElse(null);
+                    Competition competition = competitionMapper.findById(reg.getCompetitionId());
                     return RegistrationWithCompetitionDTO.from(reg, competition);
                 })
                 .collect(Collectors.toList());
