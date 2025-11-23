@@ -136,7 +136,7 @@ public class RegistrationService {
      */
     private boolean hasUserRegisteredForCompetition(Integer userId, Integer competitionId) {
         // Check individual registrations
-        List<Registration> individualRegs = registrationRepository
+        List<Registration> individualRegs = registrationMapper
                 .findByCompetitionId(competitionId)
                 .stream()
                 .filter(r -> !r.getDeleted() && r.getUserId() != null && r.getUserId().equals(userId))
@@ -152,7 +152,7 @@ public class RegistrationService {
                 .map(TeamMember::getTeamId)
                 .collect(Collectors.toList());
         
-        List<Registration> teamRegs = registrationRepository
+        List<Registration> teamRegs = registrationMapper
                 .findByCompetitionId(competitionId)
                 .stream()
                 .filter(r -> !r.getDeleted() && r.getTeamId() != null && userTeamIds.contains(r.getTeamId()))
@@ -181,7 +181,7 @@ public class RegistrationService {
 
     public List<RegistrationWithCompetitionDTO> getRegistrationsByUser(Integer userId) {
         // Get direct user registrations
-        List<Registration> directRegistrations = registrationRepository.findByUserId(userId);
+        List<Registration> directRegistrations = registrationMapper.findByUserId(userId);
         
         // Get team-based registrations where user is a member
         List<TeamMember> teamMemberships = teamMemberMapper.findByUserId(userId);
@@ -191,7 +191,7 @@ public class RegistrationService {
         
         List<Registration> teamRegistrations = new java.util.ArrayList<>();
         for (Integer teamId : teamIds) {
-            List<Registration> regs = registrationRepository.findByTeamId(teamId);
+            List<Registration> regs = registrationMapper.findByTeamId(teamId);
             teamRegistrations.addAll(regs);
         }
         
@@ -221,6 +221,6 @@ public class RegistrationService {
     }
 
     public List<Registration> getRegistrationsByStatus(String status) {
-        return registrationRepository.findByRegistrationStatus(status);
+        return registrationMapper.findByRegistrationStatus(status);
     }
 }

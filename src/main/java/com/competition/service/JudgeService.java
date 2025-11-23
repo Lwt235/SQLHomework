@@ -83,27 +83,28 @@ public class JudgeService {
     @Transactional
     public JudgeAssignment assignJudgeToSubmission(Integer judgeUserId, Integer submissionId, BigDecimal weight) {
         // Validate judge user exists and has TEACHER role
-        User judge = userMapper.findById(judgeUserId)
-                .orElseThrow(() -> new RuntimeException("评审教师不存在"));
+        User judge = userMapper.findById(judgeUserId);
+        if (judge == null) {
+            throw new RuntimeException("评审教师不存在");
+        }
         
         if (!hasTeacherRole(judgeUserId)) {
             throw new RuntimeException("只有教师用户才能被分配评审任务");
         }
         
         // Validate submission exists
-        Submission submission = submissionMapper.findById(submissionId)
-                .orElseThrow(() -> new RuntimeException("作品不存在"));
+        Submission submission = submissionMapper.findById(submissionId);
+        if (submission == null) {
+            throw new RuntimeException("作品不存在");
+        }
         
         if (!"locked".equals(submission.getSubmissionStatus())) {
             throw new RuntimeException("只有已锁定的作品才能分配评审");
         }
         
         // Check if assignment already exists
-        JudgeAssignment.JudgeAssignmentId id = new JudgeAssignment.JudgeAssignmentId();
-        id.setUserId(judgeUserId);
-        id.setSubmissionId(submissionId);
-        
-        if (judgeAssignmentMapper.existsById(id)) {
+        JudgeAssignment existing = judgeAssignmentMapper.findById(judgeUserId, submissionId);
+        if (existing != null) {
             throw new RuntimeException("该评审已被分配给此作品");
         }
         
@@ -114,7 +115,8 @@ public class JudgeService {
         assignment.setWeight(weight != null ? weight : BigDecimal.ONE);
         assignment.setScore(BigDecimal.ZERO);
         
-        return judgeAssignmentMapper.insert(assignment);
+        judgeAssignmentMapper.insert(assignment);
+        return assignment;
     }
     
     /**
@@ -173,8 +175,10 @@ public class JudgeService {
         List<Submission> lockedSubmissions;
         if (submissionId != null) {
             // Assign to specific submission
-            Submission submission = submissionMapper.findById(submissionId)
-                    .orElseThrow(() -> new RuntimeException("作品不存在"));
+            Submission submission = submissionMapper.findById(submissionId);
+            if (submission == null) {
+                throw new RuntimeException("作品不存在");
+            }
             
             if (!"locked".equals(submission.getSubmissionStatus())) {
                 throw new RuntimeException("只有已锁定的作品才能分配评审");

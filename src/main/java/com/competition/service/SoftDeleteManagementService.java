@@ -108,14 +108,16 @@ public class SoftDeleteManagementService {
      */
     @Transactional
     public void permanentlyDeleteUser(Integer userId) {
-        User user = userMapper.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
         
         if (!user.getDeleted()) {
             throw new RuntimeException("只能永久删除已软删除的用户");
         }
         
-        userMapper.delete(user);
+        userMapper.deleteById(userId);
     }
 
     /**
@@ -133,14 +135,16 @@ public class SoftDeleteManagementService {
      */
     @Transactional
     public void permanentlyDeleteCompetition(Integer competitionId) {
-        Competition competition = competitionMapper.findById(competitionId)
-                .orElseThrow(() -> new RuntimeException("Competition not found"));
+        Competition competition = competitionMapper.findById(competitionId);
+        if (competition == null) {
+            throw new RuntimeException("Competition not found");
+        }
         
         if (!competition.getDeleted()) {
             throw new RuntimeException("只能永久删除已软删除的比赛");
         }
         
-        competitionMapper.delete(competition);
+        competitionMapper.deleteById(competitionId);
     }
 
     /**
@@ -158,14 +162,16 @@ public class SoftDeleteManagementService {
      */
     @Transactional
     public void permanentlyDeleteRegistration(Integer registrationId) {
-        Registration registration = registrationMapper.findById(registrationId)
-                .orElseThrow(() -> new RuntimeException("Registration not found"));
+        Registration registration = registrationMapper.findById(registrationId);
+        if (registration == null) {
+            throw new RuntimeException("Registration not found");
+        }
         
         if (!registration.getDeleted()) {
             throw new RuntimeException("只能永久删除已软删除的报名记录");
         }
         
-        registrationMapper.delete(registration);
+        registrationMapper.deleteById(registrationId);
     }
 
     /**
@@ -183,14 +189,16 @@ public class SoftDeleteManagementService {
      */
     @Transactional
     public void permanentlyDeleteSubmission(Integer submissionId) {
-        Submission submission = submissionMapper.findById(submissionId)
-                .orElseThrow(() -> new RuntimeException("Submission not found"));
+        Submission submission = submissionMapper.findById(submissionId);
+        if (submission == null) {
+            throw new RuntimeException("Submission not found");
+        }
         
         if (!submission.getDeleted()) {
             throw new RuntimeException("只能永久删除已软删除的提交记录");
         }
         
-        submissionMapper.delete(submission);
+        submissionMapper.deleteById(submissionId);
     }
 
     /**
@@ -208,14 +216,16 @@ public class SoftDeleteManagementService {
      */
     @Transactional
     public void permanentlyDeleteAward(Integer awardId) {
-        Award award = awardMapper.findById(awardId)
-                .orElseThrow(() -> new RuntimeException("Award not found"));
+        Award award = awardMapper.findById(awardId);
+        if (award == null) {
+            throw new RuntimeException("Award not found");
+        }
         
         if (!award.getDeleted()) {
             throw new RuntimeException("只能永久删除已软删除的奖项");
         }
         
-        awardMapper.delete(award);
+        awardMapper.deleteById(awardId);
     }
 
     /**

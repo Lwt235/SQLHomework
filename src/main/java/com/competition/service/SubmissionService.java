@@ -55,7 +55,7 @@ public class SubmissionService {
         }
         
         submission.setSubmissionStatus("draft");
-        submissionMapper.update(submission); return submission;
+        submissionMapper.insert(submission);
         return submission;
     }
 
@@ -79,8 +79,10 @@ public class SubmissionService {
     }
 
     public Submission submitWork(Integer id, Integer userId) {
-        Submission submission = submissionMapper.findById(id)
-                .orElseThrow(() -> new RuntimeException("Submission not found"));
+        Submission submission = submissionMapper.findById(id);
+        if (submission == null) {
+            throw new RuntimeException("Submission not found");
+        }
 
         // Check if submission is locked
         if (submission.getFinalLockedAt() != null) {
@@ -93,11 +95,15 @@ public class SubmissionService {
         }
         
         // Check if competition submission period is valid
-        Registration registration = registrationMapper.findById(submission.getRegistrationId())
-                .orElseThrow(() -> new RuntimeException("报名信息不存在"));
+        Registration registration = registrationMapper.findById(submission.getRegistrationId());
+        if (registration == null) {
+            throw new RuntimeException("报名信息不存在");
+        }
         
-        Competition competition = competitionMapper.findById(registration.getCompetitionId())
-                .orElseThrow(() -> new RuntimeException("竞赛信息不存在"));
+        Competition competition = competitionMapper.findById(registration.getCompetitionId());
+        if (competition == null) {
+            throw new RuntimeException("竞赛信息不存在");
+        }
         
         LocalDateTime now = LocalDateTime.now();
         
@@ -114,13 +120,16 @@ public class SubmissionService {
         submission.setSubmissionStatus("submitted");
         submission.setSubmittedAt(LocalDateTime.now());
 
-        return submissionMapper.update(submission); return submission;
+        submissionMapper.update(submission);
+        return submission;
     }
 
     @Transactional
     public Submission lockSubmission(Integer id, Integer userId) {
-        Submission submission = submissionMapper.findById(id)
-                .orElseThrow(() -> new RuntimeException("Submission not found"));
+        Submission submission = submissionMapper.findById(id);
+        if (submission == null) {
+            throw new RuntimeException("Submission not found");
+        }
 
         // Check if already locked
         if (submission.getFinalLockedAt() != null) {
@@ -137,18 +146,18 @@ public class SubmissionService {
         submission.setSubmissionStatus("locked");
         
         // Save the locked submission
-        Submission lockedSubmission = submissionMapper.update(submission); return submission;
+        submissionMapper.update(submission);
         
         // Set other submissions for this registration as invalid
-        List<Submission> otherSubmissions = submissionRepository.findByRegistrationId(submission.getRegistrationId());
+        List<Submission> otherSubmissions = submissionMapper.findByRegistrationId(submission.getRegistrationId());
         for (Submission other : otherSubmissions) {
             if (!other.getSubmissionId().equals(id) && other.getFinalLockedAt() == null) {
                 other.setSubmissionStatus("invalid");
-                submissionMapper.insert(other);
+                submissionMapper.update(other);
             }
         }
 
-        return lockedSubmission;
+        return submission;
     }
     
     /**
@@ -157,8 +166,10 @@ public class SubmissionService {
      * For team registration: user must be the team leader
      */
     public boolean canUserModifySubmission(Integer registrationId, Integer userId) {
-        Registration registration = registrationMapper.findById(registrationId)
-                .orElseThrow(() -> new RuntimeException("Registration not found"));
+        Registration registration = registrationMapper.findById(registrationId);
+        if (registration == null) {
+            throw new RuntimeException("Registration not found");
+        }
         
         // Individual registration
         if (registration.getUserId() != null && registration.getTeamId() == null) {
@@ -167,13 +178,9 @@ public class SubmissionService {
         
         // Team registration - check if user is team leader
         if (registration.getTeamId() != null) {
-            TeamMember.TeamMemberId memberId = new TeamMember.TeamMemberId();
-            memberId.setTeamId(registration.getTeamId());
-            memberId.setUserId(userId);
-            
-            Optional<TeamMember> memberOpt = teamMemberRepository.findById(memberId);
-            if (memberOpt.isPresent()) {
-                return TeamService.ROLE_LEADER.equals(memberOpt.get().getRoleInTeam());
+            TeamMember member = teamMemberMapper.findById(registration.getTeamId(), userId);
+            if (member != null) {
+                return TeamService.ROLE_LEADER.equals(member.getRoleInTeam());
             }
         }
         
@@ -186,8 +193,10 @@ public class SubmissionService {
      * For team registration: user must be a team member
      */
     public boolean canUserViewSubmission(Integer registrationId, Integer userId) {
-        Registration registration = registrationMapper.findById(registrationId)
-                .orElseThrow(() -> new RuntimeException("Registration not found"));
+        Registration registration = registrationMapper.findById(registrationId);
+        if (registration == null) {
+            throw new RuntimeException("Registration not found");
+        }
         
         // Individual registration
         if (registration.getUserId() != null && registration.getTeamId() == null) {
@@ -196,17 +205,14 @@ public class SubmissionService {
         
         // Team registration - check if user is any team member
         if (registration.getTeamId() != null) {
-            TeamMember.TeamMemberId memberId = new TeamMember.TeamMemberId();
-            memberId.setTeamId(registration.getTeamId());
-            memberId.setUserId(userId);
-            
-            return teamMemberRepository.findById(memberId).isPresent();
+            TeamMember member = teamMemberMapper.findById(registration.getTeamId(), userId);
+            return member != null;
         }
         
         return false;
     }
 
     public List<Submission> getSubmissionsByRegistration(Integer registrationId) {
-        return submissionRepository.findByRegistrationId(registrationId);
+        return submissionMapper.findByRegistrationId(registrationId);
     }
 }
