@@ -59,7 +59,7 @@
             <div class="timeline-date">
               {{ formatDate(competition.submitStart) }}
               <br/>至<br/>
-              {{ formatDate(competition.submitEnd) }}
+              {{ formatDate(competition.awardPublishStart) }}
             </div>
           </div>
           
@@ -83,9 +83,7 @@
               <el-tag v-else-if="isPhaseCompleted('review')" type="info" size="small">已完成</el-tag>
             </div>
             <div class="timeline-date">
-              {{ formatDate(competition.submitEnd) }}
-              <br/>至<br/>
-              {{ formatDate(competition.awardPublishStart) }}
+              （内部评审，在奖项公示前完成）
             </div>
           </div>
           
@@ -147,10 +145,10 @@
           {{ formatDate(competition.signupStart) }} 至 {{ formatDate(competition.submitStart) }}
         </el-descriptions-item>
         <el-descriptions-item label="竞赛时间（作品提交）" :span="2">
-          {{ formatDate(competition.submitStart) }} 至 {{ formatDate(competition.submitEnd) }}
+          {{ formatDate(competition.submitStart) }} 至 {{ formatDate(competition.awardPublishStart) }}
         </el-descriptions-item>
         <el-descriptions-item label="评审时间" :span="2">
-          {{ formatDate(competition.submitEnd) }} 至 {{ formatDate(competition.awardPublishStart) }}
+          评审将在作品提交截止后进行，公示开始于 {{ formatDate(competition.awardPublishStart) }}
         </el-descriptions-item>
         <el-descriptions-item label="获奖公示时间" :span="2">
           {{ formatDate(competition.awardPublishStart) }} 至 {{ formatEndDate(competition.awardPublishStart) }} (1天)
@@ -218,11 +216,13 @@ const isCurrentPhase = (phase) => {
       return comp.signupStart && comp.submitStart &&
         new Date(comp.signupStart) <= now && now < new Date(comp.submitStart)
     case 'submit':
-      return comp.submitStart && comp.submitEnd &&
-        new Date(comp.submitStart) <= now && now < new Date(comp.submitEnd)
+      return comp.submitStart && comp.awardPublishStart &&
+        new Date(comp.submitStart) <= now && now < new Date(comp.awardPublishStart)
     case 'review':
-      return comp.submitEnd && comp.awardPublishStart &&
-        new Date(comp.submitEnd) <= now && now < new Date(comp.awardPublishStart)
+      // Review happens internally by judges, not a visible user-facing phase
+      // UI still shows the review phase card for informational purposes
+      // This case exists to handle the isCurrentPhase('review') calls in template
+      return false // Never show as "active" - it's an internal process
     case 'award':
       if (!comp.awardPublishStart) return false
       const endDate = new Date(comp.awardPublishStart)
@@ -244,7 +244,7 @@ const isPhaseCompleted = (phase) => {
     case 'signup':
       return comp.submitStart && now >= new Date(comp.submitStart)
     case 'submit':
-      return comp.submitEnd && now >= new Date(comp.submitEnd)
+      return comp.awardPublishStart && now >= new Date(comp.awardPublishStart)
     case 'review':
       return comp.awardPublishStart && now >= new Date(comp.awardPublishStart)
     case 'award':

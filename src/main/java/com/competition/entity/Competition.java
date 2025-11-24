@@ -16,7 +16,6 @@ public class Competition {
     private String organizer;
     private LocalDateTime signupStart;
     private LocalDateTime submitStart; // Also signup end and competition start
-    private LocalDateTime submitEnd; // Also review start
     private LocalDateTime awardPublishStart; // Also review end
     private Integer maxTeamSize;
     private LocalDateTime createdAt;
@@ -40,15 +39,6 @@ public class Competition {
     public void setStartDate(LocalDateTime startDate) {
         // For backward compatibility: setting startDate sets submitStart
         this.submitStart = startDate;
-    }
-    
-    public LocalDateTime getReviewStart() {
-        return submitEnd;
-    }
-    
-    public void setReviewStart(LocalDateTime reviewStart) {
-        // For backward compatibility: setting reviewStart sets submitEnd
-        this.submitEnd = reviewStart;
     }
     
     public LocalDateTime getReviewEnd() {

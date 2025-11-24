@@ -176,10 +176,10 @@ const isInSubmissionPeriod = (submission) => {
   
   const now = new Date()
   const submitStart = submission.competition.submitStart ? new Date(submission.competition.submitStart) : null
-  const submitEnd = submission.competition.submitEnd ? new Date(submission.competition.submitEnd) : null
+  const awardPublishStart = submission.competition.awardPublishStart ? new Date(submission.competition.awardPublishStart) : null
   
   if (submitStart && now < submitStart) return false
-  if (submitEnd && now > submitEnd) return false
+  if (awardPublishStart && now > awardPublishStart) return false
   
   return true
 }
