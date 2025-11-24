@@ -284,14 +284,14 @@ const saveCompetition = async () => {
         } else {
           // Create new competition with or without awards
           if (competitionForm.value.awards && competitionForm.value.awards.length > 0) {
-            // Assign priority based on array order
-            const awardsWithPriority = competitionForm.value.awards.map((award, index) => ({
-              awardName: award.awardName,
-              awardLevel: award.awardLevel,
-              awardPercentage: award.awardPercentage,
-              priority: index,
-              criteriaDescription: award.criteriaDescription
-            }))
+            // Assign priority based on array order, exclude tempId
+            const awardsWithPriority = competitionForm.value.awards.map((award, index) => {
+              const { tempId, ...awardData } = award
+              return {
+                ...awardData,
+                priority: index
+              }
+            })
             
             response = await competitionAPI.createCompetitionWithAwards({
               competition: competitionForm.value,
@@ -309,6 +309,7 @@ const saveCompetition = async () => {
           // Reset form and cleanup
           competitionForm.value = getInitialCompetitionForm()
           editingCompetitionId.value = null
+          nextAwardTempId = 0  // Reset temp ID counter
           if (awardsSortableInstance) {
             awardsSortableInstance.destroy()
             awardsSortableInstance = null

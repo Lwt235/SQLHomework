@@ -64,7 +64,6 @@ public class JudgeService {
     }
     
     /**
-     * Check if a competition is currently in the review phase
      * Check if the current time is in the review phase for the given competition.
      * Review phase is considered to be from submitStart to awardPublishStart.
      * 
