@@ -1,9 +1,12 @@
 package com.competition.service;
 
+import com.competition.entity.Award;
 import com.competition.entity.Competition;
+import com.competition.mapper.AwardMapper;
 import com.competition.mapper.CompetitionMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -13,6 +16,9 @@ public class CompetitionService {
 
     @Autowired
     private CompetitionMapper competitionMapper;
+    
+    @Autowired
+    private AwardMapper awardMapper;
 
     public List<Competition> getAllCompetitions() {
         return competitionMapper.findAll().stream()
@@ -27,6 +33,23 @@ public class CompetitionService {
     public Competition createCompetition(Competition competition) {
         validateCompetitionDates(competition);
         competitionMapper.insert(competition);
+        return competition;
+    }
+    
+    @Transactional
+    public Competition createCompetitionWithAwards(Competition competition, List<Award> awards) {
+        // First create the competition
+        validateCompetitionDates(competition);
+        competitionMapper.insert(competition);
+        
+        // Then create the awards if provided
+        if (awards != null && !awards.isEmpty()) {
+            for (Award award : awards) {
+                award.setCompetitionId(competition.getCompetitionId());
+                awardMapper.insert(award);
+            }
+        }
+        
         return competition;
     }
 

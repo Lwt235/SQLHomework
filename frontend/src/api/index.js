@@ -58,6 +58,9 @@ export const competitionAPI = {
   createCompetition(data) {
     return api.post('/competitions', data)
   },
+  createCompetitionWithAwards(data) {
+    return api.post('/competitions/with-awards', data)
+  },
   updateCompetition(id, data) {
     return api.put(`/competitions/${id}`, data)
   },

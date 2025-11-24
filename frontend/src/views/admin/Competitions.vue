@@ -137,6 +137,79 @@
           <el-input-number v-model="competitionForm.maxTeamSize" :min="1" :max="20" />
           <span style="margin-left: 10px; color: #909399;">个人参赛设为1</span>
         </el-form-item>
+        
+        <!-- Awards Configuration -->
+        <el-divider v-if="!editingCompetitionId">奖项设置（可选）</el-divider>
+        <div v-if="!editingCompetitionId">
+          <el-button 
+            type="primary" 
+            size="small" 
+            @click="addAward" 
+            style="margin-bottom: 10px"
+          >
+            添加奖项
+          </el-button>
+          
+          <div v-for="(award, index) in competitionForm.awards" :key="index" style="margin-bottom: 15px; padding: 15px; border: 1px solid #dcdfe6; border-radius: 4px;">
+            <el-row :gutter="10">
+              <el-col :span="8">
+                <el-form-item :label="`奖项 ${index + 1} 名称`" label-width="120px">
+                  <el-input v-model="award.awardName" placeholder="如：一等奖" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="奖项级别" label-width="100px">
+                  <el-select v-model="award.awardLevel">
+                    <el-option label="一等奖" value="first" />
+                    <el-option label="二等奖" value="second" />
+                    <el-option label="三等奖" value="third" />
+                    <el-option label="其他" value="other" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="获奖比例" label-width="100px">
+                  <el-input-number 
+                    v-model="award.awardPercentage" 
+                    :min="0" 
+                    :max="1" 
+                    :precision="4" 
+                    :step="0.01"
+                    placeholder="0.3"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="2">
+                <el-button 
+                  type="danger" 
+                  size="small" 
+                  @click="removeAward(index)"
+                  style="margin-top: 30px"
+                >
+                  删除
+                </el-button>
+              </el-col>
+            </el-row>
+            <el-row :gutter="10">
+              <el-col :span="8">
+                <el-form-item label="优先级" label-width="120px">
+                  <el-input-number 
+                    v-model="award.priority" 
+                    :min="0" 
+                    placeholder="0最高"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="16">
+                <el-form-item label="评选标准" label-width="100px">
+                  <el-input v-model="award.criteriaDescription" placeholder="描述获奖条件" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </div>
+        </div>
       </el-form>
       <template #footer>
         <el-button @click="showCreateDialog = false; editingCompetitionId = null">取消</el-button>
@@ -173,7 +246,8 @@ const getInitialCompetitionForm = () => ({
   submitEnd: null,
   reviewStart: null,
   reviewEnd: null,
-  maxTeamSize: 5
+  maxTeamSize: 5,
+  awards: []
 })
 
 const competitionForm = ref(getInitialCompetitionForm())
@@ -232,8 +306,15 @@ const saveCompetition = async () => {
           // Update existing competition
           response = await competitionAPI.updateCompetition(editingCompetitionId.value, competitionForm.value)
         } else {
-          // Create new competition
-          response = await competitionAPI.createCompetition(competitionForm.value)
+          // Create new competition with or without awards
+          if (competitionForm.value.awards && competitionForm.value.awards.length > 0) {
+            response = await competitionAPI.createCompetitionWithAwards({
+              competition: competitionForm.value,
+              awards: competitionForm.value.awards
+            })
+          } else {
+            response = await competitionAPI.createCompetition(competitionForm.value)
+          }
         }
         
         if (response.success) {
@@ -253,6 +334,20 @@ const saveCompetition = async () => {
       }
     }
   })
+}
+
+const addAward = () => {
+  competitionForm.value.awards.push({
+    awardName: '',
+    awardLevel: 'first',
+    awardPercentage: null,
+    priority: competitionForm.value.awards.length,
+    criteriaDescription: ''
+  })
+}
+
+const removeAward = (index) => {
+  competitionForm.value.awards.splice(index, 1)
 }
 
 const editCompetition = (competition) => {
