@@ -113,7 +113,7 @@ public class SubmissionService {
         }
         
         // Check if submission period has ended
-        if (competition.getSubmitEnd() != null && now.isAfter(competition.getSubmitEnd())) {
+        if (competition.getAwardPublishStart() != null && now.isAfter(competition.getAwardPublishStart())) {
             throw new RuntimeException("竞赛作品提交期已结束");
         }
 

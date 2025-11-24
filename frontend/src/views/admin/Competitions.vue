@@ -86,15 +86,7 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="提交截止时间" prop="submitEnd">
-          <span style="color: #909399; font-size: 12px;">（同时也是评审开始时间）</span>
-          <el-date-picker 
-            v-model="competitionForm.submitEnd" 
-            type="datetime" 
-            placeholder="选择作品提交截止时间"
-            style="width: 100%"
-          />
-        </el-form-item>
+
         <el-form-item label="奖项公示开始" prop="awardPublishStart">
           <span style="color: #909399; font-size: 12px;">（同时也是评审结束时间，公示期为1天后结束）</span>
           <el-date-picker 
@@ -112,6 +104,16 @@
         <!-- Awards Configuration -->
         <el-divider v-if="!editingCompetitionId">奖项设置（可选）</el-divider>
         <div v-if="!editingCompetitionId">
+          <el-alert 
+            title="奖项优先级说明" 
+            type="info" 
+            :closable="false"
+            style="margin-bottom: 15px"
+          >
+            <p>• 通过拖动奖项卡片可以调整优先级（从上到下依次为优先级0, 1, 2...）</p>
+            <p>• 同一人获得多个奖项时，系统将保留优先级最小（数值最小）的奖项</p>
+          </el-alert>
+          
           <el-button 
             type="primary" 
             size="small" 
@@ -121,64 +123,70 @@
             添加奖项
           </el-button>
           
-          <div v-for="(award, index) in competitionForm.awards" :key="index" style="margin-bottom: 15px; padding: 15px; border: 1px solid #dcdfe6; border-radius: 4px;">
-            <el-row :gutter="10">
-              <el-col :span="8">
-                <el-form-item :label="`奖项 ${index + 1} 名称`" label-width="120px">
-                  <el-input v-model="award.awardName" placeholder="如：一等奖" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="奖项级别" label-width="100px">
-                  <el-select v-model="award.awardLevel">
-                    <el-option label="一等奖" value="first" />
-                    <el-option label="二等奖" value="second" />
-                    <el-option label="三等奖" value="third" />
-                    <el-option label="其他" value="other" />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="获奖比例" label-width="100px">
-                  <el-input-number 
-                    v-model="award.awardPercentage" 
-                    :min="0" 
-                    :max="1" 
-                    :precision="4" 
-                    :step="0.01"
-                    placeholder="0.3"
-                    style="width: 100%"
-                  />
-                </el-form-item>
-              </el-col>
-              <el-col :span="2">
-                <el-button 
-                  type="danger" 
-                  size="small" 
-                  @click="removeAward(index)"
-                  style="margin-top: 30px"
-                >
-                  删除
-                </el-button>
-              </el-col>
-            </el-row>
-            <el-row :gutter="10">
-              <el-col :span="8">
-                <el-form-item label="优先级" label-width="120px">
-                  <el-input-number 
-                    v-model="award.priority" 
-                    :min="0" 
-                    placeholder="0最高"
-                    style="width: 100%"
-                  />
-                </el-form-item>
-              </el-col>
-              <el-col :span="16">
-                <el-form-item label="评选标准" label-width="100px">
-                  <el-input v-model="award.criteriaDescription" placeholder="描述获奖条件" />
-                </el-form-item>
-              </el-col>
-            </el-row>
+          <div ref="awardsContainerRef" style="min-height: 50px;">
+            <div 
+              v-for="(award, index) in competitionForm.awards" 
+              :key="award.tempId || index" 
+              class="award-card"
+              style="margin-bottom: 15px; padding: 15px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; cursor: move;"
+            >
+              <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <el-icon style="cursor: move; margin-right: 10px; color: #909399; font-size: 18px;">
+                  <Rank />
+                </el-icon>
+                <el-tag :type="index === 0 ? 'danger' : (index === 1 ? 'warning' : 'info')" size="small">
+                  优先级 {{ index }}
+                </el-tag>
+                <span style="margin-left: 10px; color: #606266; font-weight: 500;">奖项 {{ index + 1 }}</span>
+              </div>
+              <el-row :gutter="10">
+                <el-col :span="8">
+                  <el-form-item label="奖项名称" label-width="80px">
+                    <el-input v-model="award.awardName" placeholder="如：一等奖" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="奖项级别" label-width="80px">
+                    <el-select v-model="award.awardLevel" style="width: 100%">
+                      <el-option label="一等奖" value="first" />
+                      <el-option label="二等奖" value="second" />
+                      <el-option label="三等奖" value="third" />
+                      <el-option label="其他" value="other" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="获奖比例" label-width="80px">
+                    <el-input-number 
+                      v-model="award.awardPercentage" 
+                      :min="0" 
+                      :max="1" 
+                      :precision="4" 
+                      :step="0.01"
+                      placeholder="0.3"
+                      style="width: 100%"
+                    />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="2">
+                  <el-button 
+                    type="danger" 
+                    size="small" 
+                    @click="removeAward(index)"
+                    style="margin-top: 30px"
+                  >
+                    删除
+                  </el-button>
+                </el-col>
+              </el-row>
+              <el-row :gutter="10">
+                <el-col :span="24">
+                  <el-form-item label="评选标准" label-width="80px">
+                    <el-input v-model="award.criteriaDescription" placeholder="描述获奖条件" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </div>
           </div>
         </div>
       </el-form>
@@ -191,15 +199,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { competitionAPI } from '../../api'
 import { ElMessage } from 'element-plus'
+import { Rank } from '@element-plus/icons-vue'
+import Sortable from 'sortablejs'
 
 const competitions = ref([])
 const loading = ref(false)
 const saving = ref(false)
 const showCreateDialog = ref(false)
 const competitionFormRef = ref(null)
+const awardsContainerRef = ref(null)
+let awardsSortableInstance = null
+let nextAwardTempId = 0
 
 const getInitialCompetitionForm = () => ({
   competitionTitle: '',
@@ -211,7 +224,6 @@ const getInitialCompetitionForm = () => ({
   competitionStatus: 'draft',
   signupStart: null,
   submitStart: null,
-  submitEnd: null,
   awardPublishStart: null,
   maxTeamSize: 5,
   awards: []
@@ -238,9 +250,6 @@ const competitionRules = {
   ],
   submitStart: [
     { required: true, message: '请选择作品提交开始时间（报名截止时间）', trigger: 'change' }
-  ],
-  submitEnd: [
-    { required: true, message: '请选择作品提交截止时间（评审开始时间）', trigger: 'change' }
   ],
   awardPublishStart: [
     { required: true, message: '请选择奖项公示开始时间（评审结束时间）', trigger: 'change' }
@@ -275,9 +284,18 @@ const saveCompetition = async () => {
         } else {
           // Create new competition with or without awards
           if (competitionForm.value.awards && competitionForm.value.awards.length > 0) {
+            // Assign priority based on array order
+            const awardsWithPriority = competitionForm.value.awards.map((award, index) => ({
+              awardName: award.awardName,
+              awardLevel: award.awardLevel,
+              awardPercentage: award.awardPercentage,
+              priority: index,
+              criteriaDescription: award.criteriaDescription
+            }))
+            
             response = await competitionAPI.createCompetitionWithAwards({
               competition: competitionForm.value,
-              awards: competitionForm.value.awards
+              awards: awardsWithPriority
             })
           } else {
             response = await competitionAPI.createCompetition(competitionForm.value)
@@ -288,9 +306,13 @@ const saveCompetition = async () => {
           ElMessage.success(editingCompetitionId.value ? '竞赛更新成功' : '竞赛创建成功')
           showCreateDialog.value = false
           loadCompetitions()
-          // Reset form
+          // Reset form and cleanup
           competitionForm.value = getInitialCompetitionForm()
           editingCompetitionId.value = null
+          if (awardsSortableInstance) {
+            awardsSortableInstance.destroy()
+            awardsSortableInstance = null
+          }
         } else {
           ElMessage.error(response.message || '保存竞赛失败')
         }
@@ -303,18 +325,53 @@ const saveCompetition = async () => {
   })
 }
 
-const addAward = () => {
+const addAward = async () => {
   competitionForm.value.awards.push({
+    tempId: nextAwardTempId++, // Use temp ID for better key tracking during drag
     awardName: '',
     awardLevel: 'first',
     awardPercentage: null,
-    priority: null, // Let user set priority manually
     criteriaDescription: ''
   })
+  
+  // Initialize sortable after adding award
+  await nextTick()
+  if (!awardsSortableInstance && awardsContainerRef.value) {
+    initAwardsSortable()
+  }
 }
 
 const removeAward = (index) => {
   competitionForm.value.awards.splice(index, 1)
+}
+
+const initAwardsSortable = () => {
+  if (awardsSortableInstance) {
+    awardsSortableInstance.destroy()
+  }
+  
+  if (!awardsContainerRef.value) {
+    return
+  }
+  
+  try {
+    awardsSortableInstance = Sortable.create(awardsContainerRef.value, {
+      animation: 150,
+      handle: '.award-card',
+      ghostClass: 'sortable-ghost',
+      onEnd: (evt) => {
+        const { oldIndex, newIndex } = evt
+        if (oldIndex !== newIndex) {
+          // Reorder the awards array
+          const movedItem = competitionForm.value.awards.splice(oldIndex, 1)[0]
+          competitionForm.value.awards.splice(newIndex, 0, movedItem)
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Failed to initialize awards sortable:', error)
+    ElMessage.warning('拖动排序功能初始化失败，请刷新页面重试')
+  }
 }
 
 const editCompetition = (competition) => {
@@ -329,7 +386,6 @@ const editCompetition = (competition) => {
     competitionStatus: competition.competitionStatus,
     signupStart: competition.signupStart ? new Date(competition.signupStart) : null,
     submitStart: competition.submitStart ? new Date(competition.submitStart) : null,
-    submitEnd: competition.submitEnd ? new Date(competition.submitEnd) : null,
     awardPublishStart: competition.awardPublishStart ? new Date(competition.awardPublishStart) : null,
     maxTeamSize: competition.maxTeamSize || 5
   }
@@ -349,6 +405,28 @@ const deleteCompetition = async (id) => {
   }
 }
 
+// Watch dialog state to initialize sortable when it opens
+watch(showCreateDialog, async (newVal) => {
+  if (newVal && !editingCompetitionId.value) {
+    await nextTick()
+    // Clean up previous instance if exists
+    if (awardsSortableInstance) {
+      awardsSortableInstance.destroy()
+      awardsSortableInstance = null
+    }
+    // Initialize if there are awards
+    if (competitionForm.value.awards.length > 0 && awardsContainerRef.value) {
+      initAwardsSortable()
+    }
+  } else if (!newVal) {
+    // Clean up when dialog closes
+    if (awardsSortableInstance) {
+      awardsSortableInstance.destroy()
+      awardsSortableInstance = null
+    }
+  }
+})
+
 onMounted(() => {
   loadCompetitions()
 })
@@ -363,5 +441,18 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.award-card {
+  transition: all 0.3s ease;
+}
+
+.award-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.sortable-ghost) {
+  opacity: 0.5;
+  background: #f5f7fa;
 }
 </style>

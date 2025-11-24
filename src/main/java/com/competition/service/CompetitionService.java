@@ -70,7 +70,6 @@ public class CompetitionService {
         competition.setOrganizer(competitionDetails.getOrganizer());
         competition.setSignupStart(competitionDetails.getSignupStart());
         competition.setSubmitStart(competitionDetails.getSubmitStart());
-        competition.setSubmitEnd(competitionDetails.getSubmitEnd());
         competition.setAwardPublishStart(competitionDetails.getAwardPublishStart());
         competition.setMaxTeamSize(competitionDetails.getMaxTeamSize());
 
@@ -101,17 +100,10 @@ public class CompetitionService {
             }
         }
         
-        // Validate submit start and submit end (which is also review start)
-        if (competition.getSubmitStart() != null && competition.getSubmitEnd() != null) {
-            if (competition.getSubmitStart().isAfter(competition.getSubmitEnd())) {
-                throw new RuntimeException("作品提交开始时间必须早于提交结束时间");
-            }
-        }
-        
-        // Validate submit end and award publish start (which is also review end)
-        if (competition.getSubmitEnd() != null && competition.getAwardPublishStart() != null) {
-            if (competition.getSubmitEnd().isAfter(competition.getAwardPublishStart())) {
-                throw new RuntimeException("作品提交结束时间必须早于奖项公示时间");
+        // Validate submit start and award publish start
+        if (competition.getSubmitStart() != null && competition.getAwardPublishStart() != null) {
+            if (competition.getSubmitStart().isAfter(competition.getAwardPublishStart())) {
+                throw new RuntimeException("作品提交开始时间必须早于奖项公示时间");
             }
         }
     }

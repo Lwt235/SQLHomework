@@ -19,7 +19,6 @@ public interface CompetitionMapper {
         @Result(property = "organizer", column = "organizer"),
         @Result(property = "signupStart", column = "signup_start"),
         @Result(property = "submitStart", column = "submit_start"),
-        @Result(property = "submitEnd", column = "submit_end"),
         @Result(property = "awardPublishStart", column = "award_publish_start"),
         @Result(property = "maxTeamSize", column = "max_team_size"),
         @Result(property = "createdAt", column = "created_at"),
@@ -45,10 +44,10 @@ public interface CompetitionMapper {
     List<Competition> findByLevel(String level);
     
     @Insert("INSERT INTO Competition (competition_title, short_title, competition_status, description, " +
-            "category, level, organizer, signup_start, submit_start, submit_end, award_publish_start, " +
+            "category, level, organizer, signup_start, submit_start, award_publish_start, " +
             "max_team_size, created_at, updated_at, is_deleted) " +
             "VALUES (#{competitionTitle}, #{shortTitle}, #{competitionStatus}, #{description}, #{category}, " +
-            "#{level}, #{organizer}, #{signupStart}, #{submitStart}, #{submitEnd}, #{awardPublishStart}, " +
+            "#{level}, #{organizer}, #{signupStart}, #{submitStart}, #{awardPublishStart}, " +
             "#{maxTeamSize}, NOW(), NOW(), FALSE)")
     @Options(useGeneratedKeys = true, keyProperty = "competitionId", keyColumn = "competition_id")
     void insert(Competition competition);
@@ -56,7 +55,7 @@ public interface CompetitionMapper {
     @Update("UPDATE Competition SET competition_title = #{competitionTitle}, short_title = #{shortTitle}, " +
             "competition_status = #{competitionStatus}, description = #{description}, category = #{category}, " +
             "level = #{level}, organizer = #{organizer}, signup_start = #{signupStart}, submit_start = #{submitStart}, " +
-            "submit_end = #{submitEnd}, award_publish_start = #{awardPublishStart}, max_team_size = #{maxTeamSize}, " +
+            "award_publish_start = #{awardPublishStart}, max_team_size = #{maxTeamSize}, " +
             "updated_at = NOW() WHERE competition_id = #{competitionId}")
     void update(Competition competition);
     
