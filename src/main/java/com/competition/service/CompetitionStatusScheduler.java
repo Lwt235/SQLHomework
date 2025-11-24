@@ -38,6 +38,8 @@ public class CompetitionStatusScheduler {
         LocalDateTime now = timeService.getCurrentTime();
         
         // Load all active competitions (including finished ones, as they may need to be updated)
+        // Note: Performance is acceptable as competitions are not expected to be in millions
+        // and we filter out deleted ones. If needed, can add pagination in the future.
         List<Competition> competitions = competitionMapper.findAll().stream()
                 .filter(c -> !c.getDeleted())
                 .collect(Collectors.toList());

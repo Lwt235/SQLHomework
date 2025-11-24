@@ -292,11 +292,13 @@ const loadCompetitions = async () => {
 }
 
 // Helper function to format datetime for backend (local time without timezone)
+// Note: We cannot use date.toISOString().slice(0, 19) because toISOString() 
+// converts to UTC, which would shift the time. We need to preserve local time.
 const formatDateTimeForBackend = (date) => {
   if (!date) return null
   if (typeof date === 'string') return date
   
-  // Format as ISO local datetime (YYYY-MM-DDTHH:mm:ss) without timezone
+  // Format as ISO local datetime (YYYY-MM-DDTHH:mm:ss) using local time components
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
