@@ -37,11 +37,12 @@ public class CompetitionStatusScheduler {
     public void updateCompetitionStatuses() {
         LocalDateTime now = timeService.getCurrentTime();
         
-        // Only load competitions that might need status updates (not already finished)
+        // Load all active competitions (including finished ones, as they may need to be updated)
         List<Competition> competitions = competitionMapper.findAll().stream()
-                .filter(c -> !c.getDeleted() && !"finished".equals(c.getCompetitionStatus()))
+                .filter(c -> !c.getDeleted())
                 .collect(Collectors.toList());
         
+        int updatedCount = 0;
         for (Competition competition : competitions) {
             String newStatus = determineCompetitionStatus(competition, now);
             
@@ -49,10 +50,15 @@ public class CompetitionStatusScheduler {
             if (newStatus != null && !newStatus.equals(competition.getCompetitionStatus())) {
                 logger.info("Updating competition {} status from {} to {}", 
                     competition.getCompetitionId(), competition.getCompetitionStatus(), newStatus);
+                String oldStatus = competition.getCompetitionStatus();
                 competition.setCompetitionStatus(newStatus);
                 competitionMapper.update(competition);
+                updatedCount++;
+                logger.info("Successfully updated competition {} status from {} to {} in database", 
+                    competition.getCompetitionId(), oldStatus, newStatus);
             }
         }
+        logger.info("Competition status update completed. {} competitions updated.", updatedCount);
     }
     
     /**
