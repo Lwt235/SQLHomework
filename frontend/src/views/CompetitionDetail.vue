@@ -94,6 +94,13 @@
             </div>
           </el-timeline-item>
         </el-timeline>
+        
+        <!-- Link to Award Results -->
+        <div style="text-align: center; margin-top: 20px;">
+          <el-button type="primary" @click="$router.push(`/competitions/${competition.competitionId}/awards`)">
+            查看获奖公示
+          </el-button>
+        </div>
       </div>
 
       <el-divider />

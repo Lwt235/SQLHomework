@@ -34,6 +34,11 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/competitions/:id/awards',
+    name: 'AwardResults',
+    component: () => import('../views/AwardResults.vue')
+  },
+  {
     path: '/my-registrations',
     name: 'MyRegistrations',
     component: () => import('../views/MyRegistrations.vue'),

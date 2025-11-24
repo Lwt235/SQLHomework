@@ -178,6 +178,12 @@ export const awardAPI = {
   },
   getAwardResultsByAward(awardId) {
     return api.get(`/awards/results/award/${awardId}`)
+  },
+  autoDistributeAwards(competitionId) {
+    return api.post(`/awards/auto-distribute/${competitionId}`)
+  },
+  getAwardResultsByCompetition(competitionId) {
+    return api.get(`/awards/results/competition/${competitionId}`)
   }
 }
 

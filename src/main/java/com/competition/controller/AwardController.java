@@ -1,6 +1,7 @@
 package com.competition.controller;
 
 import com.competition.dto.ApiResponse;
+import com.competition.dto.AwardResultWithDetailsDTO;
 import com.competition.entity.Award;
 import com.competition.entity.AwardResult;
 import com.competition.service.AwardService;
@@ -82,6 +83,29 @@ public class AwardController {
     @GetMapping("/results/award/{awardId}")
     public ResponseEntity<ApiResponse<List<AwardResult>>> getAwardResultsByAward(@PathVariable Integer awardId) {
         List<AwardResult> results = awardService.getAwardResultsByAward(awardId);
+        return ResponseEntity.ok(ApiResponse.success(results));
+    }
+    
+    /**
+     * Automatically distribute awards for a competition based on scores and award criteria
+     */
+    @PostMapping("/auto-distribute/{competitionId}")
+    public ResponseEntity<ApiResponse<Integer>> autoDistributeAwards(@PathVariable Integer competitionId) {
+        try {
+            int count = awardService.autoDistributeAwards(competitionId);
+            return ResponseEntity.ok(ApiResponse.success("成功为 " + count + " 个报名颁发奖项", count));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("自动颁奖失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Get all award results for a competition with details (for publicity display)
+     */
+    @GetMapping("/results/competition/{competitionId}")
+    public ResponseEntity<ApiResponse<List<AwardResultWithDetailsDTO>>> getAwardResultsByCompetition(
+            @PathVariable Integer competitionId) {
+        List<AwardResultWithDetailsDTO> results = awardService.getAwardResultsByCompetitionWithDetails(competitionId);
         return ResponseEntity.ok(ApiResponse.success(results));
     }
 }
