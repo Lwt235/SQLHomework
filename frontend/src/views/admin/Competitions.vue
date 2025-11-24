@@ -128,10 +128,10 @@
               v-for="(award, index) in competitionForm.awards" 
               :key="award.tempId || index" 
               class="award-card"
-              style="margin-bottom: 15px; padding: 15px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; cursor: move;"
+              style="margin-bottom: 15px; padding: 15px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff;"
             >
               <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                <el-icon style="cursor: move; margin-right: 10px; color: #909399; font-size: 18px;">
+                <el-icon class="drag-handle" style="cursor: grab; margin-right: 10px; color: #909399; font-size: 18px;">
                   <Rank />
                 </el-icon>
                 <el-tag :type="index === 0 ? 'danger' : (index === 1 ? 'warning' : 'info')" size="small">
@@ -358,7 +358,7 @@ const initAwardsSortable = () => {
   try {
     awardsSortableInstance = Sortable.create(awardsContainerRef.value, {
       animation: 150,
-      handle: '.award-card',
+      handle: '.drag-handle',
       ghostClass: 'sortable-ghost',
       onEnd: (evt) => {
         const { oldIndex, newIndex } = evt
@@ -450,6 +450,19 @@ onMounted(() => {
 
 .award-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.drag-handle {
+  cursor: grab;
+  transition: color 0.2s ease;
+}
+
+.drag-handle:hover {
+  color: #409eff !important;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 :deep(.sortable-ghost) {
