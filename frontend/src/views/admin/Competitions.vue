@@ -270,7 +270,7 @@ const competitionRules = {
     { required: true, message: '请选择作品提交开始时间（报名截止时间）', trigger: 'change' }
   ],
   reviewStart: [
-    { required: false, message: '请选择评审开始时间', trigger: 'change' }
+    { required: false, trigger: 'change' }
   ],
   awardPublishStart: [
     { required: true, message: '请选择奖项公示开始时间（评审结束时间）', trigger: 'change' }

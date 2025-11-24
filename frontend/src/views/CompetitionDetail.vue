@@ -211,7 +211,9 @@ const loadSystemTime = async () => {
     }
   } catch (error) {
     // If system time API fails, fallback to browser time
+    console.warn('Failed to fetch system time, using browser time:', error)
     systemTime.value = new Date()
+    ElMessage.warning('无法获取系统时间，使用浏览器时间')
   }
 }
 
