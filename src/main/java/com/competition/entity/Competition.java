@@ -14,17 +14,40 @@ public class Competition {
     private String category;
     private String level = "school";
     private String organizer;
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
     private LocalDateTime signupStart;
-    private LocalDateTime signupEnd;
-    private LocalDateTime submitStart;
-    private LocalDateTime submitEnd;
-    private LocalDateTime reviewStart;
-    private LocalDateTime reviewEnd;
-    private LocalDateTime awardPublishDate;
+    private LocalDateTime submitStart; // Also signup end and competition start
+    private LocalDateTime submitEnd; // Also review start
+    private LocalDateTime awardPublishStart; // Also review end
     private Integer maxTeamSize;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Boolean deleted = false;
+    
+    // Computed properties for backward compatibility and convenience
+    public LocalDateTime getSignupEnd() {
+        return submitStart;
+    }
+    
+    public LocalDateTime getStartDate() {
+        return submitStart;
+    }
+    
+    public LocalDateTime getReviewStart() {
+        return submitEnd;
+    }
+    
+    public LocalDateTime getReviewEnd() {
+        return awardPublishStart;
+    }
+    
+    public LocalDateTime getAwardPublishDate() {
+        return awardPublishStart;
+    }
+    
+    public LocalDateTime getEndDate() {
+        if (awardPublishStart != null) {
+            return awardPublishStart.plusDays(1);
+        }
+        return null;
+    }
 }

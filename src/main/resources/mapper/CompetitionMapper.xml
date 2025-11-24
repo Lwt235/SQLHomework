@@ -16,8 +16,8 @@
             c.competition_id,
             c.competition_title,
             c.competition_status,
-            c.start_date,
-            c.end_date,
+            c.submit_start as start_date,
+            DATE_ADD(c.award_publish_start, INTERVAL 1 DAY) as end_date,
             COUNT(DISTINCT r.registration_id) as registration_count,
             COUNT(DISTINCT s.submission_id) as submission_count
         FROM Competition c
@@ -28,7 +28,7 @@
         WHERE c.competition_id = #{competitionId}
           AND c.is_deleted = FALSE
         GROUP BY c.competition_id, c.competition_title, c.competition_status, 
-                 c.start_date, c.end_date
+                 c.submit_start, c.award_publish_start
     </select>
 
     <!-- Call stored procedure to calculate awards -->

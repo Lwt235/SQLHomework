@@ -17,15 +17,10 @@ public interface CompetitionMapper {
         @Result(property = "category", column = "category"),
         @Result(property = "level", column = "level"),
         @Result(property = "organizer", column = "organizer"),
-        @Result(property = "startDate", column = "start_date"),
-        @Result(property = "endDate", column = "end_date"),
         @Result(property = "signupStart", column = "signup_start"),
-        @Result(property = "signupEnd", column = "signup_end"),
         @Result(property = "submitStart", column = "submit_start"),
         @Result(property = "submitEnd", column = "submit_end"),
-        @Result(property = "reviewStart", column = "review_start"),
-        @Result(property = "reviewEnd", column = "review_end"),
-        @Result(property = "awardPublishDate", column = "award_publish_date"),
+        @Result(property = "awardPublishStart", column = "award_publish_start"),
         @Result(property = "maxTeamSize", column = "max_team_size"),
         @Result(property = "createdAt", column = "created_at"),
         @Result(property = "updatedAt", column = "updated_at"),
@@ -50,21 +45,19 @@ public interface CompetitionMapper {
     List<Competition> findByLevel(String level);
     
     @Insert("INSERT INTO Competition (competition_title, short_title, competition_status, description, " +
-            "category, level, organizer, start_date, end_date, signup_start, signup_end, submit_start, " +
-            "submit_end, review_start, review_end, award_publish_date, max_team_size, created_at, updated_at, is_deleted) " +
+            "category, level, organizer, signup_start, submit_start, submit_end, award_publish_start, " +
+            "max_team_size, created_at, updated_at, is_deleted) " +
             "VALUES (#{competitionTitle}, #{shortTitle}, #{competitionStatus}, #{description}, #{category}, " +
-            "#{level}, #{organizer}, #{startDate}, #{endDate}, #{signupStart}, #{signupEnd}, #{submitStart}, " +
-            "#{submitEnd}, #{reviewStart}, #{reviewEnd}, #{awardPublishDate}, #{maxTeamSize}, NOW(), NOW(), FALSE)")
+            "#{level}, #{organizer}, #{signupStart}, #{submitStart}, #{submitEnd}, #{awardPublishStart}, " +
+            "#{maxTeamSize}, NOW(), NOW(), FALSE)")
     @Options(useGeneratedKeys = true, keyProperty = "competitionId", keyColumn = "competition_id")
     void insert(Competition competition);
     
     @Update("UPDATE Competition SET competition_title = #{competitionTitle}, short_title = #{shortTitle}, " +
             "competition_status = #{competitionStatus}, description = #{description}, category = #{category}, " +
-            "level = #{level}, organizer = #{organizer}, start_date = #{startDate}, end_date = #{endDate}, " +
-            "signup_start = #{signupStart}, signup_end = #{signupEnd}, submit_start = #{submitStart}, " +
-            "submit_end = #{submitEnd}, review_start = #{reviewStart}, review_end = #{reviewEnd}, " +
-            "award_publish_date = #{awardPublishDate}, max_team_size = #{maxTeamSize}, updated_at = NOW() " +
-            "WHERE competition_id = #{competitionId}")
+            "level = #{level}, organizer = #{organizer}, signup_start = #{signupStart}, submit_start = #{submitStart}, " +
+            "submit_end = #{submitEnd}, award_publish_start = #{awardPublishStart}, max_team_size = #{maxTeamSize}, " +
+            "updated_at = NOW() WHERE competition_id = #{competitionId}")
     void update(Competition competition);
     
     @Update("UPDATE Competition SET is_deleted = TRUE WHERE competition_id = #{competitionId}")
