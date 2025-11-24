@@ -69,6 +69,9 @@ export const competitionAPI = {
   },
   getCompetitionsByStatus(status) {
     return api.get(`/competitions/status/${status}`)
+  },
+  refreshCompetitionStatuses() {
+    return api.post('/competitions/refresh-status')
   }
 }
 
@@ -184,6 +187,9 @@ export const awardAPI = {
   },
   getAwardResultsByCompetition(competitionId) {
     return api.get(`/awards/results/competition/${competitionId}`)
+  },
+  batchUpdatePriorities(awards) {
+    return api.put('/awards/batch-update-priorities', awards)
   }
 }
 

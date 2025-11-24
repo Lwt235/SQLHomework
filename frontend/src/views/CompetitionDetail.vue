@@ -9,94 +9,115 @@
         </el-page-header>
       </template>
 
-      <!-- Timeline Progress Display -->
+      <!-- Timeline Progress Display - Horizontal Layout -->
       <div class="timeline-section" v-if="!loading && competition.competitionId">
         <h3 style="margin-bottom: 20px; color: #303133;">竞赛进度时间轴</h3>
-        <el-timeline>
-          <el-timeline-item 
-            :timestamp="formatDate(competition.signupStart)"
-            :type="getPhaseType('signup')"
-            :icon="getPhaseIcon('signup')"
-            :size="getPhaseSize('signup')"
+        <div class="horizontal-timeline">
+          <div 
+            class="timeline-item"
+            :class="{ 
+              'timeline-item-active': isCurrentPhase('signup'),
+              'timeline-item-completed': isPhaseCompleted('signup')
+            }"
           >
-            <div class="timeline-content">
-              <h4 :class="{ 'active-phase': isCurrentPhase('signup') }">
-                报名阶段
-                <el-tag v-if="isCurrentPhase('signup')" type="success" size="small" style="margin-left: 10px">进行中</el-tag>
-                <el-tag v-else-if="isPhaseCompleted('signup')" type="info" size="small" style="margin-left: 10px">已完成</el-tag>
-              </h4>
-              <p>{{ formatDate(competition.signupStart) }} 至 {{ formatDate(competition.signupEnd) }}</p>
+            <div class="timeline-icon">
+              <el-icon v-if="isCurrentPhase('signup')" color="#67c23a"><SuccessFilled /></el-icon>
+              <el-icon v-else-if="isPhaseCompleted('signup')" color="#409eff"><CircleCheckFilled /></el-icon>
+              <el-icon v-else color="#dcdfe6"><CircleCheck /></el-icon>
             </div>
-          </el-timeline-item>
-
-          <el-timeline-item 
-            :timestamp="formatDate(competition.submitStart)"
-            :type="getPhaseType('submit')"
-            :icon="getPhaseIcon('submit')"
-            :size="getPhaseSize('submit')"
+            <div class="timeline-title">
+              报名阶段
+              <el-tag v-if="isCurrentPhase('signup')" type="success" size="small">进行中</el-tag>
+              <el-tag v-else-if="isPhaseCompleted('signup')" type="info" size="small">已完成</el-tag>
+            </div>
+            <div class="timeline-date">
+              {{ formatDate(competition.signupStart) }}
+              <br/>至<br/>
+              {{ formatDate(competition.submitStart) }}
+            </div>
+          </div>
+          
+          <div class="timeline-connector" :class="{ 'timeline-connector-active': isPhaseCompleted('signup') }"></div>
+          
+          <div 
+            class="timeline-item"
+            :class="{ 
+              'timeline-item-active': isCurrentPhase('submit'),
+              'timeline-item-completed': isPhaseCompleted('submit')
+            }"
           >
-            <div class="timeline-content">
-              <h4 :class="{ 'active-phase': isCurrentPhase('submit') }">
-                作品提交阶段
-                <el-tag v-if="isCurrentPhase('submit')" type="success" size="small" style="margin-left: 10px">进行中</el-tag>
-                <el-tag v-else-if="isPhaseCompleted('submit')" type="info" size="small" style="margin-left: 10px">已完成</el-tag>
-              </h4>
-              <p>{{ formatDate(competition.submitStart) }} 至 {{ formatDate(competition.submitEnd) }}</p>
+            <div class="timeline-icon">
+              <el-icon v-if="isCurrentPhase('submit')" color="#67c23a"><SuccessFilled /></el-icon>
+              <el-icon v-else-if="isPhaseCompleted('submit')" color="#409eff"><CircleCheckFilled /></el-icon>
+              <el-icon v-else color="#dcdfe6"><CircleCheck /></el-icon>
             </div>
-          </el-timeline-item>
-
-          <el-timeline-item 
-            v-if="competition.reviewStart && competition.reviewEnd"
-            :timestamp="formatDate(competition.reviewStart)"
-            :type="getPhaseType('review')"
-            :icon="getPhaseIcon('review')"
-            :size="getPhaseSize('review')"
+            <div class="timeline-title">
+              作品提交阶段
+              <el-tag v-if="isCurrentPhase('submit')" type="success" size="small">进行中</el-tag>
+              <el-tag v-else-if="isPhaseCompleted('submit')" type="info" size="small">已完成</el-tag>
+            </div>
+            <div class="timeline-date">
+              {{ formatDate(competition.submitStart) }}
+              <br/>至<br/>
+              {{ formatDate(competition.submitEnd) }}
+            </div>
+          </div>
+          
+          <div class="timeline-connector" :class="{ 'timeline-connector-active': isPhaseCompleted('submit') }"></div>
+          
+          <div 
+            class="timeline-item"
+            :class="{ 
+              'timeline-item-active': isCurrentPhase('review'),
+              'timeline-item-completed': isPhaseCompleted('review')
+            }"
           >
-            <div class="timeline-content">
-              <h4 :class="{ 'active-phase': isCurrentPhase('review') }">
-                评审阶段
-                <el-tag v-if="isCurrentPhase('review')" type="success" size="small" style="margin-left: 10px">进行中</el-tag>
-                <el-tag v-else-if="isPhaseCompleted('review')" type="info" size="small" style="margin-left: 10px">已完成</el-tag>
-              </h4>
-              <p>{{ formatDate(competition.reviewStart) }} 至 {{ formatDate(competition.reviewEnd) }}</p>
+            <div class="timeline-icon">
+              <el-icon v-if="isCurrentPhase('review')" color="#67c23a"><SuccessFilled /></el-icon>
+              <el-icon v-else-if="isPhaseCompleted('review')" color="#409eff"><CircleCheckFilled /></el-icon>
+              <el-icon v-else color="#dcdfe6"><CircleCheck /></el-icon>
             </div>
-          </el-timeline-item>
-
-          <el-timeline-item 
-            v-if="competition.awardPublishDate"
-            :timestamp="formatDate(competition.awardPublishDate)"
-            :type="getPhaseType('award')"
-            :icon="getPhaseIcon('award')"
-            :size="getPhaseSize('award')"
+            <div class="timeline-title">
+              评审阶段
+              <el-tag v-if="isCurrentPhase('review')" type="success" size="small">进行中</el-tag>
+              <el-tag v-else-if="isPhaseCompleted('review')" type="info" size="small">已完成</el-tag>
+            </div>
+            <div class="timeline-date">
+              {{ formatDate(competition.submitEnd) }}
+              <br/>至<br/>
+              {{ formatDate(competition.awardPublishStart) }}
+            </div>
+          </div>
+          
+          <div class="timeline-connector" :class="{ 'timeline-connector-active': isPhaseCompleted('review') }"></div>
+          
+          <div 
+            class="timeline-item"
+            :class="{ 
+              'timeline-item-active': isCurrentPhase('award'),
+              'timeline-item-completed': isPhaseCompleted('award')
+            }"
           >
-            <div class="timeline-content">
-              <h4 :class="{ 'active-phase': isCurrentPhase('award') }">
-                获奖公示
-                <el-tag v-if="isCurrentPhase('award')" type="success" size="small" style="margin-left: 10px">进行中</el-tag>
-                <el-tag v-else-if="isPhaseCompleted('award')" type="info" size="small" style="margin-left: 10px">已完成</el-tag>
-              </h4>
-              <p>{{ formatDate(competition.awardPublishDate) }}</p>
+            <div class="timeline-icon">
+              <el-icon v-if="isCurrentPhase('award')" color="#67c23a"><SuccessFilled /></el-icon>
+              <el-icon v-else-if="isPhaseCompleted('award')" color="#409eff"><CircleCheckFilled /></el-icon>
+              <el-icon v-else color="#dcdfe6"><CircleCheck /></el-icon>
             </div>
-          </el-timeline-item>
-
-          <el-timeline-item 
-            :timestamp="formatDate(competition.endDate)"
-            :type="getPhaseType('end')"
-            :icon="getPhaseIcon('end')"
-            :size="getPhaseSize('end')"
-          >
-            <div class="timeline-content">
-              <h4 :class="{ 'active-phase': isCurrentPhase('end') }">
-                竞赛结束
-                <el-tag v-if="isPhaseCompleted('end')" type="info" size="small" style="margin-left: 10px">已完成</el-tag>
-              </h4>
-              <p>{{ formatDate(competition.endDate) }}</p>
+            <div class="timeline-title">
+              获奖公示 (1天)
+              <el-tag v-if="isCurrentPhase('award')" type="success" size="small">进行中</el-tag>
+              <el-tag v-else-if="isPhaseCompleted('award')" type="info" size="small">已完成</el-tag>
             </div>
-          </el-timeline-item>
-        </el-timeline>
+            <div class="timeline-date">
+              {{ formatDate(competition.awardPublishStart) }}
+              <br/>至<br/>
+              {{ formatEndDate(competition.awardPublishStart) }}
+            </div>
+          </div>
+        </div>
         
         <!-- Link to Award Results -->
-        <div style="text-align: center; margin-top: 20px;">
+        <div style="text-align: center; margin-top: 30px;">
           <el-button type="primary" @click="$router.push(`/competitions/${competition.competitionId}/awards`)">
             查看获奖公示
           </el-button>
@@ -123,13 +144,16 @@
         <el-descriptions-item label="类别">{{ competition.category }}</el-descriptions-item>
         <el-descriptions-item label="主办方">{{ competition.organizer }}</el-descriptions-item>
         <el-descriptions-item label="报名时间" :span="2">
-          {{ formatDate(competition.signupStart) }} 至 {{ formatDate(competition.signupEnd) }}
+          {{ formatDate(competition.signupStart) }} 至 {{ formatDate(competition.submitStart) }}
         </el-descriptions-item>
-        <el-descriptions-item label="竞赛时间" :span="2">
-          {{ formatDate(competition.startDate) }} 至 {{ formatDate(competition.endDate) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="作品提交时间" :span="2">
+        <el-descriptions-item label="竞赛时间（作品提交）" :span="2">
           {{ formatDate(competition.submitStart) }} 至 {{ formatDate(competition.submitEnd) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="评审时间" :span="2">
+          {{ formatDate(competition.submitEnd) }} 至 {{ formatDate(competition.awardPublishStart) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="获奖公示时间" :span="2">
+          {{ formatDate(competition.awardPublishStart) }} 至 {{ formatEndDate(competition.awardPublishStart) }} (1天)
         </el-descriptions-item>
         <el-descriptions-item label="最大团队人数">{{ competition.maxTeamSize }}</el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">
@@ -145,6 +169,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { competitionAPI } from '../api'
 import { ElMessage } from 'element-plus'
+import { SuccessFilled, CircleCheckFilled, CircleCheck } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const competition = ref({})
@@ -169,6 +194,13 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleString('zh-CN')
 }
 
+const formatEndDate = (dateStr) => {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  date.setDate(date.getDate() + 1)
+  return date.toLocaleString('zh-CN')
+}
+
 // Get current time
 const getCurrentTime = () => {
   return new Date()
@@ -183,19 +215,19 @@ const isCurrentPhase = (phase) => {
   
   switch (phase) {
     case 'signup':
-      return comp.signupStart && comp.signupEnd &&
-        new Date(comp.signupStart) <= now && now <= new Date(comp.signupEnd)
+      return comp.signupStart && comp.submitStart &&
+        new Date(comp.signupStart) <= now && now < new Date(comp.submitStart)
     case 'submit':
       return comp.submitStart && comp.submitEnd &&
-        new Date(comp.submitStart) <= now && now <= new Date(comp.submitEnd)
+        new Date(comp.submitStart) <= now && now < new Date(comp.submitEnd)
     case 'review':
-      return comp.reviewStart && comp.reviewEnd &&
-        new Date(comp.reviewStart) <= now && now <= new Date(comp.reviewEnd)
+      return comp.submitEnd && comp.awardPublishStart &&
+        new Date(comp.submitEnd) <= now && now < new Date(comp.awardPublishStart)
     case 'award':
-      return comp.awardPublishDate && comp.endDate &&
-        new Date(comp.awardPublishDate) <= now && now <= new Date(comp.endDate)
-    case 'end':
-      return comp.endDate && now > new Date(comp.endDate)
+      if (!comp.awardPublishStart) return false
+      const endDate = new Date(comp.awardPublishStart)
+      endDate.setDate(endDate.getDate() + 1)
+      return new Date(comp.awardPublishStart) <= now && now < endDate
     default:
       return false
   }
@@ -210,45 +242,19 @@ const isPhaseCompleted = (phase) => {
   
   switch (phase) {
     case 'signup':
-      return comp.signupEnd && now > new Date(comp.signupEnd)
+      return comp.submitStart && now >= new Date(comp.submitStart)
     case 'submit':
-      return comp.submitEnd && now > new Date(comp.submitEnd)
+      return comp.submitEnd && now >= new Date(comp.submitEnd)
     case 'review':
-      return comp.reviewEnd && now > new Date(comp.reviewEnd)
+      return comp.awardPublishStart && now >= new Date(comp.awardPublishStart)
     case 'award':
-      return comp.awardPublishDate && comp.endDate && now > new Date(comp.endDate)
-    case 'end':
-      return comp.endDate && now > new Date(comp.endDate)
+      if (!comp.awardPublishStart) return false
+      const endDate = new Date(comp.awardPublishStart)
+      endDate.setDate(endDate.getDate() + 1)
+      return now >= endDate
     default:
       return false
   }
-}
-
-// Get phase type for timeline styling
-const getPhaseType = (phase) => {
-  if (isCurrentPhase(phase)) {
-    return 'success'
-  } else if (isPhaseCompleted(phase)) {
-    return 'primary'
-  } else {
-    return 'info'
-  }
-}
-
-// Get phase icon
-const getPhaseIcon = (phase) => {
-  if (isCurrentPhase(phase)) {
-    return 'SuccessFilled'
-  } else if (isPhaseCompleted(phase)) {
-    return 'CircleCheckFilled'
-  } else {
-    return 'CircleFilled'
-  }
-}
-
-// Get phase size
-const getPhaseSize = (phase) => {
-  return isCurrentPhase(phase) ? 'large' : 'normal'
 }
 
 onMounted(() => {
@@ -270,31 +276,86 @@ onMounted(() => {
 
 .timeline-section {
   margin-bottom: 30px;
-  padding: 20px;
+  padding: 30px;
   background: #f9f9f9;
   border-radius: 8px;
 }
 
-.timeline-content h4 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  color: #303133;
-  transition: color 0.3s;
+.horizontal-timeline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 0;
 }
 
-.timeline-content h4.active-phase {
+.timeline-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.timeline-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  z-index: 2;
+}
+
+.timeline-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #606266;
+  margin-bottom: 8px;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.timeline-item-active .timeline-title {
   color: #67c23a;
   font-weight: bold;
 }
 
-.timeline-content p {
-  margin: 0;
-  font-size: 14px;
-  color: #909399;
+.timeline-item-completed .timeline-title {
+  color: #409eff;
 }
 
-:deep(.el-timeline-item__timestamp) {
-  font-weight: 500;
-  color: #606266;
+.timeline-date {
+  font-size: 13px;
+  color: #909399;
+  line-height: 1.6;
+}
+
+.timeline-connector {
+  flex: 0 0 60px;
+  height: 4px;
+  background: #dcdfe6;
+  margin-top: 16px;
+  position: relative;
+}
+
+.timeline-connector-active {
+  background: #409eff;
+}
+
+@media (max-width: 768px) {
+  .horizontal-timeline {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .timeline-connector {
+    width: 4px;
+    height: 40px;
+    margin: 10px auto;
+  }
+  
+  .timeline-item {
+    width: 100%;
+  }
 }
 </style>

@@ -100,6 +100,21 @@ public class AwardController {
     }
     
     /**
+     * Batch update award priorities for a competition
+     */
+    @PutMapping("/batch-update-priorities")
+    public ResponseEntity<ApiResponse<Void>> batchUpdatePriorities(@RequestBody List<Award> awards) {
+        try {
+            for (Award award : awards) {
+                awardService.updateAward(award.getAwardId(), award);
+            }
+            return ResponseEntity.ok(ApiResponse.success("Priorities updated successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to update priorities: " + e.getMessage()));
+        }
+    }
+    
+    /**
      * Get all award results for a competition with details (for publicity display)
      */
     @GetMapping("/results/competition/{competitionId}")

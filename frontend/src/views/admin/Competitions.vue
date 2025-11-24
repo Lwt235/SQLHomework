@@ -69,22 +69,6 @@
             <el-option label="已结束" value="finished" />
           </el-select>
         </el-form-item>
-        <el-form-item label="竞赛开始时间" prop="startDate">
-          <el-date-picker 
-            v-model="competitionForm.startDate" 
-            type="datetime" 
-            placeholder="选择竞赛开始时间"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="竞赛结束时间" prop="endDate">
-          <el-date-picker 
-            v-model="competitionForm.endDate" 
-            type="datetime" 
-            placeholder="选择竞赛结束时间"
-            style="width: 100%"
-          />
-        </el-form-item>
         <el-form-item label="报名开始时间" prop="signupStart">
           <el-date-picker 
             v-model="competitionForm.signupStart" 
@@ -93,15 +77,8 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="报名截止时间" prop="signupEnd">
-          <el-date-picker 
-            v-model="competitionForm.signupEnd" 
-            type="datetime" 
-            placeholder="选择报名截止时间"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="作品提交开始" prop="submitStart">
+        <el-form-item label="提交开始时间" prop="submitStart">
+          <span style="color: #909399; font-size: 12px;">（同时也是报名截止时间和竞赛开始时间）</span>
           <el-date-picker 
             v-model="competitionForm.submitStart" 
             type="datetime" 
@@ -109,7 +86,8 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="作品提交截止" prop="submitEnd">
+        <el-form-item label="提交截止时间" prop="submitEnd">
+          <span style="color: #909399; font-size: 12px;">（同时也是评审开始时间）</span>
           <el-date-picker 
             v-model="competitionForm.submitEnd" 
             type="datetime" 
@@ -117,19 +95,12 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="评审开始时间" prop="reviewStart">
+        <el-form-item label="奖项公示开始" prop="awardPublishStart">
+          <span style="color: #909399; font-size: 12px;">（同时也是评审结束时间，公示期为1天后结束）</span>
           <el-date-picker 
-            v-model="competitionForm.reviewStart" 
+            v-model="competitionForm.awardPublishStart" 
             type="datetime" 
-            placeholder="选择评审开始时间"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="评审截止时间" prop="reviewEnd">
-          <el-date-picker 
-            v-model="competitionForm.reviewEnd" 
-            type="datetime" 
-            placeholder="选择评审截止时间"
+            placeholder="选择奖项公示开始时间"
             style="width: 100%"
           />
         </el-form-item>
@@ -238,14 +209,10 @@ const getInitialCompetitionForm = () => ({
   level: 'school',
   organizer: '',
   competitionStatus: 'draft',
-  startDate: null,
-  endDate: null,
   signupStart: null,
-  signupEnd: null,
   submitStart: null,
   submitEnd: null,
-  reviewStart: null,
-  reviewEnd: null,
+  awardPublishStart: null,
   maxTeamSize: 5,
   awards: []
 })
@@ -269,14 +236,14 @@ const competitionRules = {
   signupStart: [
     { required: true, message: '请选择报名开始时间', trigger: 'change' }
   ],
-  signupEnd: [
-    { required: true, message: '请选择报名截止时间', trigger: 'change' }
-  ],
   submitStart: [
-    { required: true, message: '请选择作品提交开始时间', trigger: 'change' }
+    { required: true, message: '请选择作品提交开始时间（报名截止时间）', trigger: 'change' }
   ],
   submitEnd: [
-    { required: true, message: '请选择作品提交截止时间', trigger: 'change' }
+    { required: true, message: '请选择作品提交截止时间（评审开始时间）', trigger: 'change' }
+  ],
+  awardPublishStart: [
+    { required: true, message: '请选择奖项公示开始时间（评审结束时间）', trigger: 'change' }
   ]
 }
 
@@ -360,14 +327,10 @@ const editCompetition = (competition) => {
     level: competition.level,
     organizer: competition.organizer,
     competitionStatus: competition.competitionStatus,
-    startDate: competition.startDate ? new Date(competition.startDate) : null,
-    endDate: competition.endDate ? new Date(competition.endDate) : null,
     signupStart: competition.signupStart ? new Date(competition.signupStart) : null,
-    signupEnd: competition.signupEnd ? new Date(competition.signupEnd) : null,
     submitStart: competition.submitStart ? new Date(competition.submitStart) : null,
     submitEnd: competition.submitEnd ? new Date(competition.submitEnd) : null,
-    reviewStart: competition.reviewStart ? new Date(competition.reviewStart) : null,
-    reviewEnd: competition.reviewEnd ? new Date(competition.reviewEnd) : null,
+    awardPublishStart: competition.awardPublishStart ? new Date(competition.awardPublishStart) : null,
     maxTeamSize: competition.maxTeamSize || 5
   }
   editingCompetitionId.value = competition.competitionId

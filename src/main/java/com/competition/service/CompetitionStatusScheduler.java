@@ -2,6 +2,8 @@ package com.competition.service;
 
 import com.competition.entity.Competition;
 import com.competition.mapper.CompetitionMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
 @Service
 public class CompetitionStatusScheduler {
     
+    private static final Logger logger = LoggerFactory.getLogger(CompetitionStatusScheduler.class);
+    
     @Autowired
     private CompetitionMapper competitionMapper;
     
@@ -28,7 +32,7 @@ public class CompetitionStatusScheduler {
      * Update competition statuses based on current time
      * Configurable interval via application.properties
      */
-    @Scheduled(fixedRateString = "${competition.status.update.interval:300000}")
+    @Scheduled(fixedRateString = "${competition.status.update.interval:3600000}")
     @Transactional
     public void updateCompetitionStatuses() {
         LocalDateTime now = timeService.getCurrentTime();
@@ -47,6 +51,17 @@ public class CompetitionStatusScheduler {
                 competitionMapper.update(competition);
             }
         }
+    }
+    
+    /**
+     * Manually trigger competition status update
+     * This method can be called by administrators to immediately refresh competition statuses
+     */
+    @Transactional
+    public void manualUpdateCompetitionStatuses() {
+        logger.info("Manual competition status update triggered by administrator");
+        updateCompetitionStatuses();
+        logger.info("Manual competition status update completed");
     }
     
     /**

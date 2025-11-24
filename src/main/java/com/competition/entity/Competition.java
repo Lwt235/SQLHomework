@@ -14,17 +14,72 @@ public class Competition {
     private String category;
     private String level = "school";
     private String organizer;
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
     private LocalDateTime signupStart;
-    private LocalDateTime signupEnd;
-    private LocalDateTime submitStart;
-    private LocalDateTime submitEnd;
-    private LocalDateTime reviewStart;
-    private LocalDateTime reviewEnd;
-    private LocalDateTime awardPublishDate;
+    private LocalDateTime submitStart; // Also signup end and competition start
+    private LocalDateTime submitEnd; // Also review start
+    private LocalDateTime awardPublishStart; // Also review end
     private Integer maxTeamSize;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Boolean deleted = false;
+    
+    // Computed properties for backward compatibility and convenience
+    public LocalDateTime getSignupEnd() {
+        return submitStart;
+    }
+    
+    public void setSignupEnd(LocalDateTime signupEnd) {
+        // For backward compatibility: setting signupEnd sets submitStart
+        this.submitStart = signupEnd;
+    }
+    
+    public LocalDateTime getStartDate() {
+        return submitStart;
+    }
+    
+    public void setStartDate(LocalDateTime startDate) {
+        // For backward compatibility: setting startDate sets submitStart
+        this.submitStart = startDate;
+    }
+    
+    public LocalDateTime getReviewStart() {
+        return submitEnd;
+    }
+    
+    public void setReviewStart(LocalDateTime reviewStart) {
+        // For backward compatibility: setting reviewStart sets submitEnd
+        this.submitEnd = reviewStart;
+    }
+    
+    public LocalDateTime getReviewEnd() {
+        return awardPublishStart;
+    }
+    
+    public void setReviewEnd(LocalDateTime reviewEnd) {
+        // For backward compatibility: setting reviewEnd sets awardPublishStart
+        this.awardPublishStart = reviewEnd;
+    }
+    
+    public LocalDateTime getAwardPublishDate() {
+        return awardPublishStart;
+    }
+    
+    public void setAwardPublishDate(LocalDateTime awardPublishDate) {
+        // For backward compatibility: setting awardPublishDate sets awardPublishStart
+        this.awardPublishStart = awardPublishDate;
+    }
+    
+    public LocalDateTime getEndDate() {
+        if (awardPublishStart != null) {
+            return awardPublishStart.plusDays(1);
+        }
+        return null;
+    }
+    
+    public void setEndDate(LocalDateTime endDate) {
+        // For backward compatibility: setting endDate sets awardPublishStart to 1 day before
+        if (endDate != null) {
+            this.awardPublishStart = endDate.minusDays(1);
+        }
+    }
 }
