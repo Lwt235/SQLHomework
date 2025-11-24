@@ -59,7 +59,7 @@
             <div class="timeline-date">
               {{ formatDate(competition.submitStart) }}
               <br/>至<br/>
-              {{ formatDate(competition.awardPublishStart) }}
+              {{ formatDate(competition.reviewStart || competition.awardPublishStart) }}
             </div>
           </div>
           
@@ -83,7 +83,14 @@
               <el-tag v-else-if="isPhaseCompleted('review')" type="info" size="small">已完成</el-tag>
             </div>
             <div class="timeline-date">
-              （内部评审，在奖项公示前完成）
+              <span v-if="competition.reviewStart">
+                {{ formatDate(competition.reviewStart) }}
+                <br/>至<br/>
+                {{ formatDate(competition.awardPublishStart) }}
+              </span>
+              <span v-else>
+                （内部评审，在奖项公示前完成）
+              </span>
             </div>
           </div>
           
@@ -129,9 +136,14 @@
         <el-descriptions-item label="简称">{{ competition.shortTitle }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag v-if="competition.competitionStatus === 'draft'" type="info">草稿</el-tag>
+          <el-tag v-else-if="competition.competitionStatus === 'registering'" type="primary">报名中</el-tag>
+          <el-tag v-else-if="competition.competitionStatus === 'submitting'" type="success">进行中-提交作品</el-tag>
+          <el-tag v-else-if="competition.competitionStatus === 'reviewing'" type="warning">评审中</el-tag>
+          <el-tag v-else-if="competition.competitionStatus === 'publicizing'">公示中</el-tag>
+          <el-tag v-else-if="competition.competitionStatus === 'finished'" type="info">已结束</el-tag>
+          <!-- Backward compatibility with old statuses -->
           <el-tag v-else-if="competition.competitionStatus === 'published'">已发布</el-tag>
           <el-tag v-else-if="competition.competitionStatus === 'ongoing'" type="success">进行中</el-tag>
-          <el-tag v-else-if="competition.competitionStatus === 'finished'" type="warning">已结束</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="级别">
           <el-tag v-if="competition.level === 'school'">校级</el-tag>
@@ -145,9 +157,12 @@
           {{ formatDate(competition.signupStart) }} 至 {{ formatDate(competition.submitStart) }}
         </el-descriptions-item>
         <el-descriptions-item label="竞赛时间（作品提交）" :span="2">
-          {{ formatDate(competition.submitStart) }} 至 {{ formatDate(competition.awardPublishStart) }}
+          {{ formatDate(competition.submitStart) }} 至 {{ formatDate(competition.reviewStart || competition.awardPublishStart) }}
         </el-descriptions-item>
-        <el-descriptions-item label="评审时间" :span="2">
+        <el-descriptions-item label="评审时间" :span="2" v-if="competition.reviewStart">
+          {{ formatDate(competition.reviewStart) }} 至 {{ formatDate(competition.awardPublishStart) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="评审时间" :span="2" v-else>
           评审将在作品提交截止后进行，公示开始于 {{ formatDate(competition.awardPublishStart) }}
         </el-descriptions-item>
         <el-descriptions-item label="获奖公示时间" :span="2">
@@ -165,13 +180,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { competitionAPI } from '../api'
+import { competitionAPI, systemTimeAPI } from '../api'
 import { ElMessage } from 'element-plus'
 import { SuccessFilled, CircleCheckFilled, CircleCheck } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const competition = ref({})
 const loading = ref(false)
+const systemTime = ref(null)
 
 const loadCompetition = async () => {
   loading.value = true
@@ -187,6 +203,18 @@ const loadCompetition = async () => {
   }
 }
 
+const loadSystemTime = async () => {
+  try {
+    const response = await systemTimeAPI.getCurrentTime()
+    if (response.success) {
+      systemTime.value = new Date(response.data.currentTime)
+    }
+  } catch (error) {
+    // If system time API fails, fallback to browser time
+    systemTime.value = new Date()
+  }
+}
+
 const formatDate = (dateStr) => {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleString('zh-CN')
@@ -199,9 +227,9 @@ const formatEndDate = (dateStr) => {
   return date.toLocaleString('zh-CN')
 }
 
-// Get current time
+// Get current time (use system time if available, otherwise browser time)
 const getCurrentTime = () => {
-  return new Date()
+  return systemTime.value || new Date()
 }
 
 // Check if a phase is the current active phase
@@ -216,13 +244,15 @@ const isCurrentPhase = (phase) => {
       return comp.signupStart && comp.submitStart &&
         new Date(comp.signupStart) <= now && now < new Date(comp.submitStart)
     case 'submit':
-      return comp.submitStart && comp.awardPublishStart &&
-        new Date(comp.submitStart) <= now && now < new Date(comp.awardPublishStart)
+      // If reviewStart exists, use it; otherwise use awardPublishStart
+      const submitEnd = comp.reviewStart || comp.awardPublishStart
+      return comp.submitStart && submitEnd &&
+        new Date(comp.submitStart) <= now && now < new Date(submitEnd)
     case 'review':
-      // Review happens internally by judges, not a visible user-facing phase
-      // UI still shows the review phase card for informational purposes
-      // This case exists to handle the isCurrentPhase('review') calls in template
-      return false // Never show as "active" - it's an internal process
+      // Review phase is visible if reviewStart exists
+      if (!comp.reviewStart) return false
+      return comp.reviewStart && comp.awardPublishStart &&
+        new Date(comp.reviewStart) <= now && now < new Date(comp.awardPublishStart)
     case 'award':
       if (!comp.awardPublishStart) return false
       const endDate = new Date(comp.awardPublishStart)
@@ -244,7 +274,8 @@ const isPhaseCompleted = (phase) => {
     case 'signup':
       return comp.submitStart && now >= new Date(comp.submitStart)
     case 'submit':
-      return comp.awardPublishStart && now >= new Date(comp.awardPublishStart)
+      const submitEnd = comp.reviewStart || comp.awardPublishStart
+      return submitEnd && now >= new Date(submitEnd)
     case 'review':
       return comp.awardPublishStart && now >= new Date(comp.awardPublishStart)
     case 'award':
@@ -257,8 +288,9 @@ const isPhaseCompleted = (phase) => {
   }
 }
 
-onMounted(() => {
-  loadCompetition()
+onMounted(async () => {
+  await loadSystemTime()
+  await loadCompetition()
 })
 </script>
 
