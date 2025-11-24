@@ -73,13 +73,13 @@ public class JudgeService {
      * In production, you may want to enforce review dates as required fields.
      */
     private boolean isInReviewPhase(Competition competition) {
-        if (competition == null || competition.getSubmitStart() == null || competition.getReviewEnd() == null) {
+        if (competition == null || competition.getSubmitStart() == null || competition.getAwardPublishStart() == null) {
             // If review dates are not set, allow review at any time (backward compatibility)
             return true;
         }
         
         LocalDateTime currentTime = timeService.getCurrentTime();
-        return !currentTime.isBefore(competition.getSubmitStart()) && !currentTime.isAfter(competition.getReviewEnd());
+        return !currentTime.isBefore(competition.getSubmitStart()) && !currentTime.isAfter(competition.getAwardPublishStart());
     }
 
     public JudgeAssignment updateAssignment(JudgeAssignment assignment) {
