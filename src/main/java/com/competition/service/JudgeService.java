@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
@@ -49,6 +50,9 @@ public class JudgeService {
     
     @Autowired
     private CompetitionMapper competitionMapper;
+    
+    @Autowired
+    private TimeService timeService;
 
     public List<JudgeAssignment> getAllAssignments() {
         return judgeAssignmentMapper.findAll();
@@ -58,12 +62,41 @@ public class JudgeService {
         judgeAssignmentMapper.insert(assignment);
         return assignment;
     }
+    
+    /**
+     * Check if a competition is currently in the review phase
+     */
+    private boolean isInReviewPhase(Competition competition) {
+        if (competition == null || competition.getReviewStart() == null || competition.getReviewEnd() == null) {
+            // If review dates are not set, allow review at any time
+            return true;
+        }
+        
+        LocalDateTime currentTime = timeService.getCurrentTime();
+        return !currentTime.isBefore(competition.getReviewStart()) && !currentTime.isAfter(competition.getReviewEnd());
+    }
 
     public JudgeAssignment updateAssignment(JudgeAssignment assignment) {
         // Get existing assignment to preserve created_at and weight
         JudgeAssignment existing = judgeAssignmentMapper.findById(assignment.getUserId(), assignment.getSubmissionId());
         if (existing == null) {
             throw new RuntimeException("评审任务不存在");
+        }
+        
+        // Get submission and competition to check review phase
+        Submission submission = submissionMapper.findById(assignment.getSubmissionId());
+        if (submission == null) {
+            throw new RuntimeException("作品不存在");
+        }
+        
+        Registration registration = registrationMapper.findById(submission.getRegistrationId());
+        if (registration == null) {
+            throw new RuntimeException("报名信息不存在");
+        }
+        
+        Competition competition = competitionMapper.findById(registration.getCompetitionId());
+        if (!isInReviewPhase(competition)) {
+            throw new RuntimeException("当前不在评审阶段，无法提交评审");
         }
         
         // Update fields - preserve weight if not provided

@@ -117,6 +117,22 @@
             style="width: 100%"
           />
         </el-form-item>
+        <el-form-item label="评审开始时间" prop="reviewStart">
+          <el-date-picker 
+            v-model="competitionForm.reviewStart" 
+            type="datetime" 
+            placeholder="选择评审开始时间"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="评审截止时间" prop="reviewEnd">
+          <el-date-picker 
+            v-model="competitionForm.reviewEnd" 
+            type="datetime" 
+            placeholder="选择评审截止时间"
+            style="width: 100%"
+          />
+        </el-form-item>
         <el-form-item label="最大团队人数" prop="maxTeamSize">
           <el-input-number v-model="competitionForm.maxTeamSize" :min="1" :max="20" />
           <span style="margin-left: 10px; color: #909399;">个人参赛设为1</span>
@@ -155,6 +171,8 @@ const getInitialCompetitionForm = () => ({
   signupEnd: null,
   submitStart: null,
   submitEnd: null,
+  reviewStart: null,
+  reviewEnd: null,
   maxTeamSize: 5
 })
 
@@ -253,6 +271,8 @@ const editCompetition = (competition) => {
     signupEnd: competition.signupEnd ? new Date(competition.signupEnd) : null,
     submitStart: competition.submitStart ? new Date(competition.submitStart) : null,
     submitEnd: competition.submitEnd ? new Date(competition.submitEnd) : null,
+    reviewStart: competition.reviewStart ? new Date(competition.reviewStart) : null,
+    reviewEnd: competition.reviewEnd ? new Date(competition.reviewEnd) : null,
     maxTeamSize: competition.maxTeamSize || 5
   }
   editingCompetitionId.value = competition.competitionId
