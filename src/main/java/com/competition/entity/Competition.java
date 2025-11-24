@@ -28,20 +28,45 @@ public class Competition {
         return submitStart;
     }
     
+    public void setSignupEnd(LocalDateTime signupEnd) {
+        // For backward compatibility: setting signupEnd sets submitStart
+        this.submitStart = signupEnd;
+    }
+    
     public LocalDateTime getStartDate() {
         return submitStart;
+    }
+    
+    public void setStartDate(LocalDateTime startDate) {
+        // For backward compatibility: setting startDate sets submitStart
+        this.submitStart = startDate;
     }
     
     public LocalDateTime getReviewStart() {
         return submitEnd;
     }
     
+    public void setReviewStart(LocalDateTime reviewStart) {
+        // For backward compatibility: setting reviewStart sets submitEnd
+        this.submitEnd = reviewStart;
+    }
+    
     public LocalDateTime getReviewEnd() {
         return awardPublishStart;
     }
     
+    public void setReviewEnd(LocalDateTime reviewEnd) {
+        // For backward compatibility: setting reviewEnd sets awardPublishStart
+        this.awardPublishStart = reviewEnd;
+    }
+    
     public LocalDateTime getAwardPublishDate() {
         return awardPublishStart;
+    }
+    
+    public void setAwardPublishDate(LocalDateTime awardPublishDate) {
+        // For backward compatibility: setting awardPublishDate sets awardPublishStart
+        this.awardPublishStart = awardPublishDate;
     }
     
     public LocalDateTime getEndDate() {
@@ -49,5 +74,12 @@ public class Competition {
             return awardPublishStart.plusDays(1);
         }
         return null;
+    }
+    
+    public void setEndDate(LocalDateTime endDate) {
+        // For backward compatibility: setting endDate sets awardPublishStart to 1 day before
+        if (endDate != null) {
+            this.awardPublishStart = endDate.minusDays(1);
+        }
     }
 }
