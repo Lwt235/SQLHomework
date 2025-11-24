@@ -4,6 +4,7 @@ import com.competition.dto.ApiResponse;
 import com.competition.dto.CompetitionWithAwardsRequest;
 import com.competition.entity.Competition;
 import com.competition.service.CompetitionService;
+import com.competition.service.CompetitionStatusScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,9 @@ public class CompetitionController {
 
     @Autowired
     private CompetitionService competitionService;
+    
+    @Autowired
+    private CompetitionStatusScheduler competitionStatusScheduler;
 
     @GetMapping("/list")
     public ResponseEntity<ApiResponse<List<Competition>>> getAllCompetitions() {
@@ -77,5 +81,19 @@ public class CompetitionController {
     public ResponseEntity<ApiResponse<List<Competition>>> getCompetitionsByStatus(@PathVariable String status) {
         List<Competition> competitions = competitionService.getCompetitionsByStatus(status);
         return ResponseEntity.ok(ApiResponse.success(competitions));
+    }
+    
+    /**
+     * Manually trigger competition status update for all competitions
+     * This allows administrators to immediately refresh competition statuses
+     */
+    @PostMapping("/refresh-status")
+    public ResponseEntity<ApiResponse<Void>> refreshCompetitionStatuses() {
+        try {
+            competitionStatusScheduler.manualUpdateCompetitionStatuses();
+            return ResponseEntity.ok(ApiResponse.success("Competition statuses refreshed successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to refresh competition statuses: " + e.getMessage()));
+        }
     }
 }

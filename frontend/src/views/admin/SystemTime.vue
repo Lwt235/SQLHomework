@@ -108,6 +108,28 @@
       <el-divider />
 
       <div class="refresh-section">
+        <h3>比赛状态管理</h3>
+        <el-alert 
+          title="刷新比赛状态" 
+          type="info" 
+          :closable="false"
+          style="margin-bottom: 10px"
+        >
+          <p>点击下方按钮可立即刷新所有比赛的状态，配合系统时间调整功能测试比赛状态切换</p>
+          <p><strong>注意：</strong>比赛状态会根据当前系统时间（测试模式下为调整后的时间）自动更新</p>
+        </el-alert>
+        <el-button 
+          type="primary" 
+          @click="refreshCompetitionStatuses" 
+          :loading="refreshLoading"
+        >
+          立即刷新比赛状态
+        </el-button>
+      </div>
+
+      <el-divider />
+
+      <div class="refresh-section">
         <el-button @click="loadTimeInfo" :loading="loading">刷新时间信息</el-button>
       </div>
     </el-card>
@@ -116,7 +138,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { systemTimeAPI } from '../../api'
+import { systemTimeAPI, competitionAPI } from '../../api'
 import { ElMessage } from 'element-plus'
 
 const timeInfo = ref({
@@ -126,6 +148,7 @@ const timeInfo = ref({
   offsetSeconds: 0
 })
 const loading = ref(false)
+const refreshLoading = ref(false)
 const testTime = ref(null)
 const customOffset = ref(0)
 
@@ -241,6 +264,20 @@ const formatDuration = (seconds) => {
   
   const result = parts.join(' ')
   return seconds < 0 ? `-${result}` : `+${result}`
+}
+
+const refreshCompetitionStatuses = async () => {
+  refreshLoading.value = true
+  try {
+    const response = await competitionAPI.refreshCompetitionStatuses()
+    if (response.success) {
+      ElMessage.success('比赛状态已刷新')
+    }
+  } catch (error) {
+    ElMessage.error('刷新比赛状态失败')
+  } finally {
+    refreshLoading.value = false
+  }
 }
 
 onMounted(() => {

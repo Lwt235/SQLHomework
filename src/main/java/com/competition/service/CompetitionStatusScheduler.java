@@ -28,7 +28,7 @@ public class CompetitionStatusScheduler {
      * Update competition statuses based on current time
      * Configurable interval via application.properties
      */
-    @Scheduled(fixedRateString = "${competition.status.update.interval:300000}")
+    @Scheduled(fixedRateString = "${competition.status.update.interval:3600000}")
     @Transactional
     public void updateCompetitionStatuses() {
         LocalDateTime now = timeService.getCurrentTime();
@@ -47,6 +47,15 @@ public class CompetitionStatusScheduler {
                 competitionMapper.update(competition);
             }
         }
+    }
+    
+    /**
+     * Manually trigger competition status update
+     * This method can be called by administrators to immediately refresh competition statuses
+     */
+    @Transactional
+    public void manualUpdateCompetitionStatuses() {
+        updateCompetitionStatuses();
     }
     
     /**

@@ -69,6 +69,9 @@ export const competitionAPI = {
   },
   getCompetitionsByStatus(status) {
     return api.get(`/competitions/status/${status}`)
+  },
+  refreshCompetitionStatuses() {
+    return api.post('/competitions/refresh-status')
   }
 }
 
