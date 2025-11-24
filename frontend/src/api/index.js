@@ -58,6 +58,9 @@ export const competitionAPI = {
   createCompetition(data) {
     return api.post('/competitions', data)
   },
+  createCompetitionWithAwards(data) {
+    return api.post('/competitions/with-awards', data)
+  },
   updateCompetition(id, data) {
     return api.put(`/competitions/${id}`, data)
   },
@@ -175,6 +178,12 @@ export const awardAPI = {
   },
   getAwardResultsByAward(awardId) {
     return api.get(`/awards/results/award/${awardId}`)
+  },
+  autoDistributeAwards(competitionId) {
+    return api.post(`/awards/auto-distribute/${competitionId}`)
+  },
+  getAwardResultsByCompetition(competitionId) {
+    return api.get(`/awards/results/competition/${competitionId}`)
   }
 }
 

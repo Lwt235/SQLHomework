@@ -1,6 +1,7 @@
 package com.competition.controller;
 
 import com.competition.dto.ApiResponse;
+import com.competition.dto.CompetitionWithAwardsRequest;
 import com.competition.entity.Competition;
 import com.competition.service.CompetitionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,16 @@ public class CompetitionController {
             return ResponseEntity.ok(ApiResponse.success("Competition created successfully", created));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to create competition: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/with-awards")
+    public ResponseEntity<ApiResponse<Competition>> createCompetitionWithAwards(@RequestBody CompetitionWithAwardsRequest request) {
+        try {
+            Competition created = competitionService.createCompetitionWithAwards(request.getCompetition(), request.getAwards());
+            return ResponseEntity.ok(ApiResponse.success("Competition and awards created successfully", created));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to create competition with awards: " + e.getMessage()));
         }
     }
 

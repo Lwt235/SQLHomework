@@ -10,6 +10,8 @@
         <result property="competitionId" column="competition_id"/>
         <result property="awardName" column="award_name"/>
         <result property="awardLevel" column="award_level"/>
+        <result property="awardPercentage" column="award_percentage"/>
+        <result property="priority" column="priority"/>
         <result property="criteriaDescription" column="criteria_description"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
@@ -38,10 +40,10 @@
     <!-- Insert -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="awardId" keyColumn="award_id">
         INSERT INTO Award (
-            competition_id, award_name, award_level, criteria_description,
+            competition_id, award_name, award_level, award_percentage, priority, criteria_description,
             created_at, updated_at, is_deleted
         ) VALUES (
-            #{competitionId}, #{awardName}, #{awardLevel}, #{criteriaDescription},
+            #{competitionId}, #{awardName}, #{awardLevel}, #{awardPercentage}, #{priority}, #{criteriaDescription},
             NOW(), NOW(), FALSE
         )
     </insert>
@@ -52,6 +54,8 @@
         SET competition_id = #{competitionId},
             award_name = #{awardName},
             award_level = #{awardLevel},
+            award_percentage = #{awardPercentage},
+            priority = #{priority},
             criteria_description = #{criteriaDescription},
             updated_at = NOW()
         WHERE award_id = #{awardId}
