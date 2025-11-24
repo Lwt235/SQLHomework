@@ -219,8 +219,9 @@ const isCurrentPhase = (phase) => {
       return comp.submitStart && comp.awardPublishStart &&
         new Date(comp.submitStart) <= now && now < new Date(comp.awardPublishStart)
     case 'review':
-      // Review happens internally by judges, show as active during submit phase
-      // This is just for UI indication, actual review is managed by judges
+      // Review happens internally by judges, not a visible user-facing phase
+      // UI still shows the review phase card for informational purposes
+      // This case exists to handle the isCurrentPhase('review') calls in template
       return false // Never show as "active" - it's an internal process
     case 'award':
       if (!comp.awardPublishStart) return false

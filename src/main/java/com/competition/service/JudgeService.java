@@ -67,13 +67,13 @@ public class JudgeService {
      * Check if the current time is in the review phase for the given competition.
      * Review phase is considered to be from submitStart to awardPublishStart.
      * 
-     * Note: If review dates are not set, this method returns true to allow review at any time.
-     * This is designed to be backward compatible with competitions that don't have review phase configured.
-     * In production, you may want to enforce review dates as required fields.
+     * Note: If submitStart or awardPublishStart are not set, this method returns true to allow review at any time.
+     * This is designed to be backward compatible with competitions that don't have these dates configured.
+     * In production, you may want to enforce these dates as required fields.
      */
     private boolean isInReviewPhase(Competition competition) {
         if (competition == null || competition.getSubmitStart() == null || competition.getAwardPublishStart() == null) {
-            // If review dates are not set, allow review at any time (backward compatibility)
+            // If required dates are not set, allow review at any time (backward compatibility)
             return true;
         }
         
