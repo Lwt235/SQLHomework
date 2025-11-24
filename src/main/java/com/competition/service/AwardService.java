@@ -40,6 +40,8 @@ public class AwardService {
 
         award.setAwardName(awardDetails.getAwardName());
         award.setAwardLevel(awardDetails.getAwardLevel());
+        award.setAwardPercentage(awardDetails.getAwardPercentage());
+        award.setPriority(awardDetails.getPriority());
         award.setCriteriaDescription(awardDetails.getCriteriaDescription());
 
         awardMapper.update(award);

@@ -19,7 +19,20 @@
             <el-tag v-else>其他</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="竞赛" min-width="200">
+        <el-table-column prop="awardPercentage" label="获奖比例" width="120">
+          <template #default="{ row }">
+            {{ row.awardPercentage ? (row.awardPercentage * 100).toFixed(1) + '%' : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="priority" label="优先级" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.priority !== null && row.priority !== undefined" :type="row.priority === 0 ? 'danger' : (row.priority === 1 ? 'warning' : 'info')">
+              {{ row.priority }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="竞赛" min-width="150">
           <template #default="{ row }">
             {{ row.competition?.competitionTitle || '-' }}
           </template>
@@ -49,6 +62,29 @@
             <el-option label="其他" value="other" />
           </el-select>
         </el-form-item>
+        <el-form-item label="获奖比例">
+          <el-input-number 
+            v-model="awardForm.awardPercentage" 
+            :min="0" 
+            :max="1" 
+            :precision="4" 
+            :step="0.01"
+            placeholder="如0.3表示前30%获奖"
+            style="width: 200px"
+          />
+          <span style="margin-left: 10px; color: #909399;">
+            {{ awardForm.awardPercentage ? `前${(awardForm.awardPercentage * 100).toFixed(1)}%获奖` : '请设置获奖比例' }}
+          </span>
+        </el-form-item>
+        <el-form-item label="优先级">
+          <el-input-number 
+            v-model="awardForm.priority" 
+            :min="0" 
+            placeholder="数值越小优先级越高"
+            style="width: 200px"
+          />
+          <span style="margin-left: 10px; color: #909399;">同一人获多奖时保留优先级最小的</span>
+        </el-form-item>
         <el-form-item label="评选标准">
           <el-input v-model="awardForm.criteriaDescription" type="textarea" :rows="3" />
         </el-form-item>
@@ -73,6 +109,8 @@ const awardForm = ref({
   competitionId: 1,
   awardName: '',
   awardLevel: 'first',
+  awardPercentage: null,
+  priority: null,
   criteriaDescription: ''
 })
 

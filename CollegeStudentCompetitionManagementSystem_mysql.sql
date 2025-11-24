@@ -43,6 +43,8 @@ create table Award
    competition_id       int not null,
    award_name           varchar(200) not null,
    award_level          varchar(50) not null default 'none',
+   award_percentage     decimal(5,4) comment '获奖总分比例，如0.3表示前30%获奖',
+   priority             int comment '优先级，数值越小优先级越高，同一人获多个奖项时只保留优先级最小的',
    criteria_description text,
    created_at           datetime not null,
    updated_at           datetime not null,
