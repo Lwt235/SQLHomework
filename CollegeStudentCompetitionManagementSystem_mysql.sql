@@ -83,6 +83,7 @@ create table Competition
    organizer            varchar(200),
    signup_start         datetime comment '报名开始时间',
    submit_start         datetime comment '作品提交开始时间（同时也是报名结束时间和竞赛开始时间）',
+   review_start         datetime comment '评审开始时间（作品提交截止后开始评审）',
    award_publish_start  datetime comment '奖项公示开始时间（同时也是评审结束时间），公示期为1天',
    max_team_size        int,
    created_at           datetime not null,

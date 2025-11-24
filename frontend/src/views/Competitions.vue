@@ -14,9 +14,14 @@
         <el-select v-model="statusFilter" placeholder="筛选状态" clearable @change="loadCompetitions">
           <el-option label="全部" value="" />
           <el-option label="草稿" value="draft" />
+          <el-option label="报名中" value="registering" />
+          <el-option label="进行中-提交作品" value="submitting" />
+          <el-option label="评审中" value="reviewing" />
+          <el-option label="公示中" value="publicizing" />
+          <el-option label="已结束" value="finished" />
+          <!-- Backward compatibility with old statuses -->
           <el-option label="已发布" value="published" />
           <el-option label="进行中" value="ongoing" />
-          <el-option label="已结束" value="finished" />
         </el-select>
       </el-space>
 
@@ -32,12 +37,17 @@
             <el-tag v-else-if="row.level === 'international'" type="danger">国际级</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="competitionStatus" label="状态" width="100">
+        <el-table-column prop="competitionStatus" label="状态" width="120">
           <template #default="{ row }">
             <el-tag v-if="row.competitionStatus === 'draft'" type="info">草稿</el-tag>
+            <el-tag v-else-if="row.competitionStatus === 'registering'" type="primary">报名中</el-tag>
+            <el-tag v-else-if="row.competitionStatus === 'submitting'" type="success">进行中</el-tag>
+            <el-tag v-else-if="row.competitionStatus === 'reviewing'" type="warning">评审中</el-tag>
+            <el-tag v-else-if="row.competitionStatus === 'publicizing'">公示中</el-tag>
+            <el-tag v-else-if="row.competitionStatus === 'finished'" type="info">已结束</el-tag>
+            <!-- Backward compatibility with old statuses -->
             <el-tag v-else-if="row.competitionStatus === 'published'">已发布</el-tag>
             <el-tag v-else-if="row.competitionStatus === 'ongoing'" type="success">进行中</el-tag>
-            <el-tag v-else-if="row.competitionStatus === 'finished'" type="warning">已结束</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="signupStart" label="报名开始" width="180">
@@ -132,7 +142,7 @@ const canApply = (competition) => {
   const signupStart = new Date(competition.signupStart)
   const signupEnd = new Date(competition.signupEnd)
   return now >= signupStart && now <= signupEnd && 
-         competition.competitionStatus === 'published'
+         (competition.competitionStatus === 'published' || competition.competitionStatus === 'registering')
 }
 
 const isRegistered = (competitionId) => {
@@ -143,7 +153,8 @@ const isRegistered = (competitionId) => {
 }
 
 const isOngoing = (competition) => {
-  return competition.competitionStatus === 'ongoing' && isRegistered(competition.competitionId)
+  return (competition.competitionStatus === 'ongoing' || competition.competitionStatus === 'submitting') && 
+         isRegistered(competition.competitionId)
 }
 
 const viewDetail = (id) => {

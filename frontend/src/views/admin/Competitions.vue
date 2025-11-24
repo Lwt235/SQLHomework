@@ -11,12 +11,17 @@
       <el-table :data="competitions" v-loading="loading" style="width: 100%">
         <el-table-column prop="competitionId" label="ID" width="80" />
         <el-table-column prop="competitionTitle" label="竞赛名称" min-width="200" />
-        <el-table-column prop="competitionStatus" label="状态" width="100">
+        <el-table-column prop="competitionStatus" label="状态" width="120">
           <template #default="{ row }">
             <el-tag v-if="row.competitionStatus === 'draft'" type="info">草稿</el-tag>
+            <el-tag v-else-if="row.competitionStatus === 'registering'" type="primary">报名中</el-tag>
+            <el-tag v-else-if="row.competitionStatus === 'submitting'" type="success">进行中</el-tag>
+            <el-tag v-else-if="row.competitionStatus === 'reviewing'" type="warning">评审中</el-tag>
+            <el-tag v-else-if="row.competitionStatus === 'publicizing'">公示中</el-tag>
+            <el-tag v-else-if="row.competitionStatus === 'finished'" type="info">已结束</el-tag>
+            <!-- Backward compatibility with old statuses -->
             <el-tag v-else-if="row.competitionStatus === 'published'">已发布</el-tag>
             <el-tag v-else-if="row.competitionStatus === 'ongoing'" type="success">进行中</el-tag>
-            <el-tag v-else-if="row.competitionStatus === 'finished'" type="warning">已结束</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200">
@@ -64,8 +69,10 @@
         <el-form-item label="竞赛状态" prop="competitionStatus">
           <el-select v-model="competitionForm.competitionStatus" style="width: 100%">
             <el-option label="草稿" value="draft" />
-            <el-option label="已发布" value="published" />
-            <el-option label="进行中" value="ongoing" />
+            <el-option label="报名中" value="registering" />
+            <el-option label="进行中-提交作品" value="submitting" />
+            <el-option label="评审中" value="reviewing" />
+            <el-option label="公示中" value="publicizing" />
             <el-option label="已结束" value="finished" />
           </el-select>
         </el-form-item>
@@ -87,8 +94,18 @@
           />
         </el-form-item>
 
+        <el-form-item label="评审开始时间" prop="reviewStart">
+          <span style="color: #909399; font-size: 12px;">（作品提交截止后开始评审）</span>
+          <el-date-picker 
+            v-model="competitionForm.reviewStart" 
+            type="datetime" 
+            placeholder="选择评审开始时间"
+            style="width: 100%"
+          />
+        </el-form-item>
+
         <el-form-item label="奖项公示开始" prop="awardPublishStart">
-          <span style="color: #909399; font-size: 12px;">（同时也是作品提交截止时间，公示期为1天后结束）</span>
+          <span style="color: #909399; font-size: 12px;">（同时也是评审结束时间，公示期为1天后结束）</span>
           <el-date-picker 
             v-model="competitionForm.awardPublishStart" 
             type="datetime" 
@@ -224,6 +241,7 @@ const getInitialCompetitionForm = () => ({
   competitionStatus: 'draft',
   signupStart: null,
   submitStart: null,
+  reviewStart: null,
   awardPublishStart: null,
   maxTeamSize: 5,
   awards: []
@@ -250,6 +268,9 @@ const competitionRules = {
   ],
   submitStart: [
     { required: true, message: '请选择作品提交开始时间（报名截止时间）', trigger: 'change' }
+  ],
+  reviewStart: [
+    { required: false, trigger: 'change' }
   ],
   awardPublishStart: [
     { required: true, message: '请选择奖项公示开始时间（评审结束时间）', trigger: 'change' }
@@ -387,6 +408,7 @@ const editCompetition = (competition) => {
     competitionStatus: competition.competitionStatus,
     signupStart: competition.signupStart ? new Date(competition.signupStart) : null,
     submitStart: competition.submitStart ? new Date(competition.submitStart) : null,
+    reviewStart: competition.reviewStart ? new Date(competition.reviewStart) : null,
     awardPublishStart: competition.awardPublishStart ? new Date(competition.awardPublishStart) : null,
     maxTeamSize: competition.maxTeamSize || 5
   }

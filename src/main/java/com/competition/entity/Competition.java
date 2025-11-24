@@ -16,6 +16,7 @@ public class Competition {
     private String organizer;
     private LocalDateTime signupStart;
     private LocalDateTime submitStart; // Also signup end and competition start
+    private LocalDateTime reviewStart; // Review start time
     private LocalDateTime awardPublishStart; // Also review end
     private Integer maxTeamSize;
     private LocalDateTime createdAt;

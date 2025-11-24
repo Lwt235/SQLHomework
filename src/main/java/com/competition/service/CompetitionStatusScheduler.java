@@ -47,6 +47,8 @@ public class CompetitionStatusScheduler {
             
             // Only update if status changed
             if (newStatus != null && !newStatus.equals(competition.getCompetitionStatus())) {
+                logger.info("Updating competition {} status from {} to {}", 
+                    competition.getCompetitionId(), competition.getCompetitionStatus(), newStatus);
                 competition.setCompetitionStatus(newStatus);
                 competitionMapper.update(competition);
             }
@@ -66,39 +68,56 @@ public class CompetitionStatusScheduler {
     
     /**
      * Determine competition status based on time
+     * New granular statuses:
+     * - draft: 草稿 (not yet published)
+     * - registering: 报名中 (signup period)
+     * - submitting: 进行中-提交作品 (submission period)
+     * - reviewing: 评审中 (review period)
+     * - publicizing: 公示中 (award publication period)
+     * - finished: 已结束 (completed)
      */
     private String determineCompetitionStatus(Competition competition, LocalDateTime now) {
-        // If manually set to draft, don't auto-update
+        // If manually set to draft, don't auto-update unless signup has started
         if ("draft".equals(competition.getCompetitionStatus())) {
             // Check if should be published (signup has started)
             if (competition.getSignupStart() != null && now.isAfter(competition.getSignupStart())) {
-                return "published";
+                return "registering";
             }
             return null; // Keep as draft
         }
         
-        // Check if finished (past end date or past award publish date)
+        // Check completion status first (from end to beginning)
         LocalDateTime endDate = competition.getEndDate();
-        LocalDateTime awardPublishDate = competition.getAwardPublishDate();
-        
-        if (awardPublishDate != null && now.isAfter(awardPublishDate)) {
-            return "finished";
-        }
-        
         if (endDate != null && now.isAfter(endDate)) {
             return "finished";
         }
         
-        // Check if ongoing (past start date)
-        LocalDateTime startDate = competition.getStartDate();
-        if (startDate != null && now.isAfter(startDate)) {
-            return "ongoing";
+        // Check if in award publication period (公示中)
+        LocalDateTime awardPublishStart = competition.getAwardPublishStart();
+        if (awardPublishStart != null && now.isAfter(awardPublishStart)) {
+            // Still in publication period (before endDate)
+            return "publicizing";
         }
         
-        // Check if published (past signup start)
+        // Check if in review period (评审中)
+        LocalDateTime reviewStart = competition.getReviewStart();
+        if (reviewStart != null && now.isAfter(reviewStart)) {
+            // In review period (after review start, before award publish)
+            return "reviewing";
+        }
+        
+        // Check if in submission period (进行中-提交作品)
+        LocalDateTime submitStart = competition.getSubmitStart();
+        if (submitStart != null && now.isAfter(submitStart)) {
+            // In submission period (after submit start, before review start or award publish)
+            return "submitting";
+        }
+        
+        // Check if in signup period (报名中)
         LocalDateTime signupStart = competition.getSignupStart();
         if (signupStart != null && now.isAfter(signupStart)) {
-            return "published";
+            // In signup period (after signup start, before submit start)
+            return "registering";
         }
         
         return null; // No change
