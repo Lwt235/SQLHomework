@@ -328,7 +328,12 @@ const initSortable = () => {
   }
   
   const tableEl = awardTableRef.value?.$el.querySelector('.el-table__body-wrapper tbody')
-  if (tableEl) {
+  if (!tableEl) {
+    console.warn('Unable to initialize drag-and-drop: table element not found')
+    return
+  }
+  
+  try {
     sortableInstance = Sortable.create(tableEl, {
       handle: '.drag-handle',
       animation: 150,
@@ -344,20 +349,22 @@ const initSortable = () => {
         }
       }
     })
+  } catch (error) {
+    console.error('Failed to initialize sortable:', error)
+    ElMessage.warning('拖动排序功能初始化失败，请刷新页面重试')
   }
 }
 
 const updatePriorities = async () => {
   try {
     // Update priority for each award based on its position
-    const updatePromises = competitionAwards.value.map(async (award, index) => {
-      if (award.priority !== index) {
-        const updatedAward = { ...award, priority: index }
-        await awardAPI.updateAward(award.awardId, updatedAward)
-      }
-    })
+    const updatedAwards = competitionAwards.value.map((award, index) => ({
+      ...award,
+      priority: index
+    }))
     
-    await Promise.all(updatePromises)
+    // Send batch update request
+    await awardAPI.batchUpdatePriorities(updatedAwards)
     
     // Update local priorities
     competitionAwards.value.forEach((award, index) => {
@@ -366,7 +373,7 @@ const updatePriorities = async () => {
     
     ElMessage.success('奖项优先级已更新')
   } catch (error) {
-    ElMessage.error('更新优先级失败')
+    ElMessage.error('更新优先级失败: ' + (error.message || '未知错误'))
     // Reload to ensure consistency
     await loadAwardsByCompetition()
   }
@@ -384,6 +391,8 @@ const createAward = async () => {
     const existingCount = response.success ? response.data.length : 0
     
     // Set priority as the next number
+    // Note: There's a potential race condition if two admins create awards simultaneously
+    // The priority can be adjusted later through drag-and-drop in the competition view
     const newAward = {
       ...awardForm.value,
       priority: existingCount
@@ -391,7 +400,7 @@ const createAward = async () => {
     
     const createResponse = await awardAPI.createAward(newAward)
     if (createResponse.success) {
-      ElMessage.success('奖项创建成功')
+      ElMessage.success('奖项创建成功，可在竞赛视图中拖动调整优先级')
       showCreateDialog.value = false
       
       // Reset form
@@ -409,7 +418,7 @@ const createAward = async () => {
       }
     }
   } catch (error) {
-    ElMessage.error('创建奖项失败')
+    ElMessage.error('创建奖项失败: ' + (error.message || '未知错误'))
   }
 }
 

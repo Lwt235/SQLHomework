@@ -187,6 +187,9 @@ export const awardAPI = {
   },
   getAwardResultsByCompetition(competitionId) {
     return api.get(`/awards/results/competition/${competitionId}`)
+  },
+  batchUpdatePriorities(awards) {
+    return api.put('/awards/batch-update-priorities', awards)
   }
 }
 
