@@ -341,7 +341,7 @@ const addAward = () => {
     awardName: '',
     awardLevel: 'first',
     awardPercentage: null,
-    priority: competitionForm.value.awards.length,
+    priority: null, // Let user set priority manually
     criteriaDescription: ''
   })
 }
