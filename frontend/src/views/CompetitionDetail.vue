@@ -83,9 +83,7 @@
               <el-tag v-else-if="isPhaseCompleted('review')" type="info" size="small">已完成</el-tag>
             </div>
             <div class="timeline-date">
-              {{ formatDate(competition.awardPublishStart) }}
-              <br/>至<br/>
-              {{ formatDate(competition.awardPublishStart) }}
+              （内部评审，在奖项公示前完成）
             </div>
           </div>
           
@@ -221,8 +219,9 @@ const isCurrentPhase = (phase) => {
       return comp.submitStart && comp.awardPublishStart &&
         new Date(comp.submitStart) <= now && now < new Date(comp.awardPublishStart)
     case 'review':
-      // Review phase is now considered to start at awardPublishStart
-      return false // Review happens internally before award publication
+      // Review happens internally by judges, show as active during submit phase
+      // This is just for UI indication, actual review is managed by judges
+      return false // Never show as "active" - it's an internal process
     case 'award':
       if (!comp.awardPublishStart) return false
       const endDate = new Date(comp.awardPublishStart)

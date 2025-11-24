@@ -88,7 +88,7 @@
         </el-form-item>
 
         <el-form-item label="奖项公示开始" prop="awardPublishStart">
-          <span style="color: #909399; font-size: 12px;">（同时也是评审结束时间，公示期为1天后结束）</span>
+          <span style="color: #909399; font-size: 12px;">（同时也是作品提交截止时间，公示期为1天后结束）</span>
           <el-date-picker 
             v-model="competitionForm.awardPublishStart" 
             type="datetime" 
