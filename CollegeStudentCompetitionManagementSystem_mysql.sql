@@ -39,7 +39,7 @@ drop table if exists UserRole;
 /*==============================================================*/
 create table Award
 (
-   award_id             int not null,
+   award_id             int not null auto_increment,
    competition_id       int not null,
    award_name           varchar(200) not null,
    award_level          varchar(50) not null default 'none',
@@ -73,7 +73,7 @@ create table AwardResult
 /*==============================================================*/
 create table Competition
 (
-   competition_id       int not null,
+   competition_id       int not null auto_increment,
    competition_title    varchar(255) not null,
    short_title          varchar(100),
    competition_status   varchar(20) default 'draft',
@@ -97,7 +97,7 @@ create table Competition
 /*==============================================================*/
 create table File
 (
-   file_id              int not null,
+   file_id              int not null auto_increment,
    upload_user_id       int not null,
    storage_key          varchar(500) not null,
    file_name            varchar(255) not null,
@@ -150,7 +150,7 @@ create table Notification
 /*==============================================================*/
 create table Registration
 (
-   registration_id      int not null,
+   registration_id      int not null auto_increment,
    competition_id       int not null,
    team_id              int,
    user_id              int,
@@ -169,7 +169,7 @@ create table Registration
 /*==============================================================*/
 create table Role
 (
-   role_id              int not null,
+   role_id              int not null auto_increment,
    role_code            varchar(50) not null,
    role_name            varchar(100) not null,
    description          text,
@@ -184,7 +184,7 @@ create table Role
 /*==============================================================*/
 create table Rule
 (
-   rule_id              int not null,
+   rule_id              int not null auto_increment,
    competition_id       int,
    rule_type            varchar(50) not null default 'other',
    content              text not null,
@@ -201,7 +201,7 @@ create table Rule
 /*==============================================================*/
 create table Submission
 (
-   submission_id        int not null,
+   submission_id        int not null auto_increment,
    registration_id      int not null,
    submission_title     varchar(255) not null,
    abstract             text,
@@ -229,7 +229,7 @@ create table SubmissionFile
 /*==============================================================*/
 create table Team
 (
-   team_id              int not null,
+   team_id              int not null auto_increment,
    team_name            varchar(200) not null,
    formed_at            datetime,
    description          text,
@@ -255,7 +255,7 @@ create table TeamMember
 /*==============================================================*/
 create table User
 (
-   user_id              int not null,
+   user_id              int not null auto_increment,
    user_status          varchar(20) not null default 'active',
    username             varchar(50) not null,
    password_hash        varchar(256) not null,
