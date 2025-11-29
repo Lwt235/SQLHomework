@@ -291,6 +291,24 @@ const loadCompetitions = async () => {
   }
 }
 
+// Helper function to format datetime for backend (local time without timezone)
+// Note: We cannot use date.toISOString().slice(0, 19) because toISOString() 
+// converts to UTC, which would shift the time. We need to preserve local time.
+const formatDateTimeForBackend = (date) => {
+  if (!date) return null
+  if (typeof date === 'string') return date
+  
+  // Format as ISO local datetime (YYYY-MM-DDTHH:mm:ss) using local time components
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
+
 const saveCompetition = async () => {
   if (!competitionFormRef.value) return
   
@@ -298,10 +316,19 @@ const saveCompetition = async () => {
     if (valid) {
       saving.value = true
       try {
+        // Prepare competition data with properly formatted dates
+        const competitionData = {
+          ...competitionForm.value,
+          signupStart: formatDateTimeForBackend(competitionForm.value.signupStart),
+          submitStart: formatDateTimeForBackend(competitionForm.value.submitStart),
+          reviewStart: formatDateTimeForBackend(competitionForm.value.reviewStart),
+          awardPublishStart: formatDateTimeForBackend(competitionForm.value.awardPublishStart)
+        }
+        
         let response
         if (editingCompetitionId.value) {
           // Update existing competition
-          response = await competitionAPI.updateCompetition(editingCompetitionId.value, competitionForm.value)
+          response = await competitionAPI.updateCompetition(editingCompetitionId.value, competitionData)
         } else {
           // Create new competition with or without awards
           if (competitionForm.value.awards && competitionForm.value.awards.length > 0) {
@@ -315,11 +342,11 @@ const saveCompetition = async () => {
             })
             
             response = await competitionAPI.createCompetitionWithAwards({
-              competition: competitionForm.value,
+              competition: competitionData,
               awards: awardsWithPriority
             })
           } else {
-            response = await competitionAPI.createCompetition(competitionForm.value)
+            response = await competitionAPI.createCompetition(competitionData)
           }
         }
         
