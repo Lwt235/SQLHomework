@@ -115,7 +115,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import { submissionAPI, registrationAPI } from '../api'
+import { submissionAPI, registrationAPI, systemTimeAPI } from '../api'
 import { ElMessage } from 'element-plus'
 
 const authStore = useAuthStore()
@@ -125,6 +125,7 @@ const loading = ref(false)
 const showCreateDialog = ref(false)
 const showEditDialog = ref(false)
 const editingSubmission = ref(null)
+const systemTime = ref(null)
 const newSubmission = ref({
   registrationId: null,
   submissionTitle: '',
@@ -170,11 +171,29 @@ const loadSubmissions = async () => {
   }
 }
 
+const loadSystemTime = async () => {
+  try {
+    const response = await systemTimeAPI.getCurrentTime()
+    if (response.success) {
+      systemTime.value = new Date(response.data.currentTime)
+    }
+  } catch (error) {
+    // If system time API fails, fallback to browser time
+    console.warn('Failed to fetch system time, using browser time:', error)
+    systemTime.value = new Date()
+  }
+}
+
+// Get current time (use system time if available, otherwise browser time)
+const getCurrentTime = () => {
+  return systemTime.value || new Date()
+}
+
 // Check if submission is within time period
 const isInSubmissionPeriod = (submission) => {
   if (!submission.competition) return true // Allow if competition not loaded
   
-  const now = new Date()
+  const now = getCurrentTime()
   const submitStart = submission.competition.submitStart ? new Date(submission.competition.submitStart) : null
   const awardPublishStart = submission.competition.awardPublishStart ? new Date(submission.competition.awardPublishStart) : null
   
@@ -297,6 +316,7 @@ const formatDate = (dateStr) => {
 }
 
 onMounted(async () => {
+  await loadSystemTime()
   await loadApprovedRegistrations()
   await loadSubmissions()
 })
