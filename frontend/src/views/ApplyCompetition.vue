@@ -210,6 +210,22 @@ const getCurrentTime = () => {
   return systemTime.value || new Date()
 }
 
+// Check if a competition is available for registration
+const isCompetitionAvailableForRegistration = (competition) => {
+  if (!competition || !competition.signupStart || !competition.signupEnd) {
+    return false
+  }
+  
+  const now = getCurrentTime()
+  const signupStart = new Date(competition.signupStart)
+  const signupEnd = new Date(competition.signupEnd)
+  const isInSignupPeriod = !isNaN(signupStart.getTime()) && !isNaN(signupEnd.getTime()) &&
+                           now >= signupStart && now <= signupEnd
+  const hasValidStatus = ['published', 'ongoing', 'registering'].includes(competition.competitionStatus)
+  
+  return isInSignupPeriod && hasValidStatus
+}
+
 const loadAvailableCompetitions = async () => {
   loading.value = true
   try {
@@ -219,14 +235,8 @@ const loadAvailableCompetitions = async () => {
         const competitionResponse = await competitionAPI.getCompetitionById(preSelectedCompetitionId.value)
         if (competitionResponse.success && competitionResponse.data) {
           const competition = competitionResponse.data
-          // Validate that the competition is available for registration
-          const now = getCurrentTime()
-          const signupStart = new Date(competition.signupStart)
-          const signupEnd = new Date(competition.signupEnd)
-          const isInSignupPeriod = now >= signupStart && now <= signupEnd
-          const hasValidStatus = ['published', 'ongoing', 'registering'].includes(competition.competitionStatus)
           
-          if (isInSignupPeriod && hasValidStatus) {
+          if (isCompetitionAvailableForRegistration(competition)) {
             selectedCompetition.value = competition
             activeStep.value = 1
           } else {
@@ -241,16 +251,8 @@ const loadAvailableCompetitions = async () => {
     
     const response = await competitionAPI.getAllCompetitions()
     if (response.success) {
-      // Filter competitions that are in signup period
-      const now = getCurrentTime()
-      availableCompetitions.value = response.data.filter(comp => {
-        if (!comp.signupStart || !comp.signupEnd) return false
-        const signupStart = new Date(comp.signupStart)
-        const signupEnd = new Date(comp.signupEnd)
-        return !isNaN(signupStart.getTime()) && !isNaN(signupEnd.getTime()) &&
-               now >= signupStart && now <= signupEnd && 
-               (comp.competitionStatus === 'published' || comp.competitionStatus === 'ongoing' || comp.competitionStatus === 'registering')
-      })
+      // Filter competitions that are available for registration
+      availableCompetitions.value = response.data.filter(isCompetitionAvailableForRegistration)
     }
   } catch (error) {
     ElMessage.error('加载竞赛列表失败')
