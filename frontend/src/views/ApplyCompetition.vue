@@ -144,7 +144,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { competitionAPI, registrationAPI, teamAPI } from '../api'
+import { competitionAPI, registrationAPI, teamAPI, systemTimeAPI } from '../api'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -157,6 +157,7 @@ const selectedCompetition = ref(null)
 const registrationFormRef = ref(null)
 const preSelectedCompetitionId = ref(null)
 const captainTeams = ref([])
+const systemTime = ref(null)
 
 const registrationForm = ref({
   participationType: 'individual',
@@ -191,13 +192,31 @@ const loadCaptainTeams = async () => {
   }
 }
 
+const loadSystemTime = async () => {
+  try {
+    const response = await systemTimeAPI.getCurrentTime()
+    if (response.success) {
+      systemTime.value = new Date(response.data.currentTime)
+    }
+  } catch (error) {
+    // If system time API fails, fallback to browser time
+    console.warn('Failed to fetch system time, using browser time:', error)
+    systemTime.value = new Date()
+  }
+}
+
+// Get current time (use system time if available, otherwise browser time)
+const getCurrentTime = () => {
+  return systemTime.value || new Date()
+}
+
 const loadAvailableCompetitions = async () => {
   loading.value = true
   try {
     const response = await competitionAPI.getAllCompetitions()
     if (response.success) {
       // Filter competitions that are in signup period
-      const now = new Date()
+      const now = getCurrentTime()
       availableCompetitions.value = response.data.filter(comp => {
         if (!comp.signupStart || !comp.signupEnd) return false
         const signupStart = new Date(comp.signupStart)
@@ -297,12 +316,13 @@ const submitRegistration = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Get competition ID from query params if provided
   const route = router.currentRoute.value
   if (route.query.competitionId) {
     preSelectedCompetitionId.value = parseInt(route.query.competitionId)
   }
+  await loadSystemTime()
   loadAvailableCompetitions()
 })
 </script>

@@ -92,7 +92,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { competitionAPI, registrationAPI } from '../api'
+import { competitionAPI, registrationAPI, systemTimeAPI } from '../api'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -101,6 +101,7 @@ const competitions = ref([])
 const loading = ref(false)
 const statusFilter = ref('')
 const userRegistrations = ref([])
+const systemTime = ref(null)
 
 const loadCompetitions = async () => {
   loading.value = true
@@ -132,13 +133,31 @@ const loadUserRegistrations = async () => {
   }
 }
 
+const loadSystemTime = async () => {
+  try {
+    const response = await systemTimeAPI.getCurrentTime()
+    if (response.success) {
+      systemTime.value = new Date(response.data.currentTime)
+    }
+  } catch (error) {
+    // If system time API fails, fallback to browser time
+    console.warn('Failed to fetch system time, using browser time:', error)
+    systemTime.value = new Date()
+  }
+}
+
+// Get current time (use system time if available, otherwise browser time)
+const getCurrentTime = () => {
+  return systemTime.value || new Date()
+}
+
 const formatDate = (dateStr) => {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleString('zh-CN')
 }
 
 const canApply = (competition) => {
-  const now = new Date()
+  const now = getCurrentTime()
   const signupStart = new Date(competition.signupStart)
   const signupEnd = new Date(competition.signupEnd)
   return now >= signupStart && now <= signupEnd && 
@@ -172,7 +191,8 @@ const navigateToSubmit = (competitionId) => {
   router.push('/my-submissions')
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadSystemTime()
   loadCompetitions()
   loadUserRegistrations()
 })
