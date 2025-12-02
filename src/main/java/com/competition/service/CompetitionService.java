@@ -96,28 +96,28 @@ public class CompetitionService {
     private void validateCompetitionDates(Competition competition) {
         // Validate signup start and submit start (which is also signup end)
         if (competition.getSignupStart() != null && competition.getSubmitStart() != null) {
-            if (competition.getSignupStart().isAfter(competition.getSubmitStart())) {
+            if (!competition.getSignupStart().isBefore(competition.getSubmitStart())) {
                 throw new RuntimeException("报名开始时间必须早于作品提交开始时间");
             }
         }
         
         // Validate submit start and review start
         if (competition.getSubmitStart() != null && competition.getReviewStart() != null) {
-            if (competition.getSubmitStart().isAfter(competition.getReviewStart())) {
+            if (!competition.getSubmitStart().isBefore(competition.getReviewStart())) {
                 throw new RuntimeException("作品提交开始时间必须早于评审开始时间");
             }
         }
         
         // Validate review start and award publish start
         if (competition.getReviewStart() != null && competition.getAwardPublishStart() != null) {
-            if (competition.getReviewStart().isAfter(competition.getAwardPublishStart())) {
+            if (!competition.getReviewStart().isBefore(competition.getAwardPublishStart())) {
                 throw new RuntimeException("评审开始时间必须早于奖项公示时间");
             }
         }
         
         // Validate submit start and award publish start (in case review_start is not provided)
         if (competition.getSubmitStart() != null && competition.getAwardPublishStart() != null) {
-            if (competition.getSubmitStart().isAfter(competition.getAwardPublishStart())) {
+            if (!competition.getSubmitStart().isBefore(competition.getAwardPublishStart())) {
                 throw new RuntimeException("作品提交开始时间必须早于奖项公示时间");
             }
         }
