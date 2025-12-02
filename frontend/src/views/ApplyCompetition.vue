@@ -210,49 +210,32 @@ const getCurrentTime = () => {
   return systemTime.value || new Date()
 }
 
-// Check if a competition is available for registration
-const isCompetitionAvailableForRegistration = (competition) => {
-  if (!competition || !competition.signupStart || !competition.signupEnd) {
-    return false
-  }
-  
-  const now = getCurrentTime()
-  const signupStart = new Date(competition.signupStart)
-  const signupEnd = new Date(competition.signupEnd)
-  const isInSignupPeriod = !isNaN(signupStart.getTime()) && !isNaN(signupEnd.getTime()) &&
-                           now >= signupStart && now <= signupEnd
-  const hasValidStatus = ['published', 'ongoing', 'registering'].includes(competition.competitionStatus)
-  
-  return isInSignupPeriod && hasValidStatus
-}
-
 const loadAvailableCompetitions = async () => {
   loading.value = true
   try {
-    // If a competition ID was provided in query params, fetch it directly first
-    if (preSelectedCompetitionId.value) {
-      try {
-        const competitionResponse = await competitionAPI.getCompetitionById(preSelectedCompetitionId.value)
-        if (competitionResponse.success && competitionResponse.data) {
-          const competition = competitionResponse.data
-          
-          if (isCompetitionAvailableForRegistration(competition)) {
-            selectedCompetition.value = competition
-            activeStep.value = 1
-          } else {
-            ElMessage.warning('该竞赛当前不在报名期间或不可报名')
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load pre-selected competition:', error)
-        ElMessage.error('无法加载指定的竞赛，请从列表中选择')
-      }
-    }
-    
     const response = await competitionAPI.getAllCompetitions()
     if (response.success) {
-      // Filter competitions that are available for registration
-      availableCompetitions.value = response.data.filter(isCompetitionAvailableForRegistration)
+      // Filter competitions that are in signup period
+      const now = getCurrentTime()
+      availableCompetitions.value = response.data.filter(comp => {
+        if (!comp.signupStart || !comp.signupEnd) return false
+        const signupStart = new Date(comp.signupStart)
+        const signupEnd = new Date(comp.signupEnd)
+        return !isNaN(signupStart.getTime()) && !isNaN(signupEnd.getTime()) &&
+               now >= signupStart && now <= signupEnd && 
+               (comp.competitionStatus === 'published' || comp.competitionStatus === 'ongoing')
+      })
+      
+      // If a competition ID was provided in query params, pre-select it
+      if (preSelectedCompetitionId.value) {
+        const preSelected = availableCompetitions.value.find(
+          comp => comp.competitionId === preSelectedCompetitionId.value
+        )
+        if (preSelected) {
+          selectedCompetition.value = preSelected
+          activeStep.value = 1
+        }
+      }
     }
   } catch (error) {
     ElMessage.error('加载竞赛列表失败')
