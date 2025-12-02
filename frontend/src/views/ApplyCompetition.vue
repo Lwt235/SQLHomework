@@ -218,11 +218,24 @@ const loadAvailableCompetitions = async () => {
       try {
         const competitionResponse = await competitionAPI.getCompetitionById(preSelectedCompetitionId.value)
         if (competitionResponse.success && competitionResponse.data) {
-          selectedCompetition.value = competitionResponse.data
-          activeStep.value = 1
+          const competition = competitionResponse.data
+          // Validate that the competition is available for registration
+          const now = getCurrentTime()
+          const signupStart = new Date(competition.signupStart)
+          const signupEnd = new Date(competition.signupEnd)
+          const isInSignupPeriod = now >= signupStart && now <= signupEnd
+          const hasValidStatus = ['published', 'ongoing', 'registering'].includes(competition.competitionStatus)
+          
+          if (isInSignupPeriod && hasValidStatus) {
+            selectedCompetition.value = competition
+            activeStep.value = 1
+          } else {
+            ElMessage.warning('该竞赛当前不在报名期间或不可报名')
+          }
         }
       } catch (error) {
         console.error('Failed to load pre-selected competition:', error)
+        ElMessage.error('无法加载指定的竞赛，请从列表中选择')
       }
     }
     
