@@ -213,6 +213,19 @@ const getCurrentTime = () => {
 const loadAvailableCompetitions = async () => {
   loading.value = true
   try {
+    // If a competition ID was provided in query params, fetch it directly first
+    if (preSelectedCompetitionId.value) {
+      try {
+        const competitionResponse = await competitionAPI.getCompetitionById(preSelectedCompetitionId.value)
+        if (competitionResponse.success && competitionResponse.data) {
+          selectedCompetition.value = competitionResponse.data
+          activeStep.value = 1
+        }
+      } catch (error) {
+        console.error('Failed to load pre-selected competition:', error)
+      }
+    }
+    
     const response = await competitionAPI.getAllCompetitions()
     if (response.success) {
       // Filter competitions that are in signup period
@@ -223,19 +236,8 @@ const loadAvailableCompetitions = async () => {
         const signupEnd = new Date(comp.signupEnd)
         return !isNaN(signupStart.getTime()) && !isNaN(signupEnd.getTime()) &&
                now >= signupStart && now <= signupEnd && 
-               (comp.competitionStatus === 'published' || comp.competitionStatus === 'ongoing')
+               (comp.competitionStatus === 'published' || comp.competitionStatus === 'ongoing' || comp.competitionStatus === 'registering')
       })
-      
-      // If a competition ID was provided in query params, pre-select it
-      if (preSelectedCompetitionId.value) {
-        const preSelected = availableCompetitions.value.find(
-          comp => comp.competitionId === preSelectedCompetitionId.value
-        )
-        if (preSelected) {
-          selectedCompetition.value = preSelected
-          activeStep.value = 1
-        }
-      }
     }
   } catch (error) {
     ElMessage.error('加载竞赛列表失败')
